@@ -3,6 +3,11 @@ name: "Smoke Testing: Spot Buy and Sell Flow"
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
   test:
     runs-on: self-hosted
@@ -69,9 +74,9 @@ jobs:
               # Check if this test has a failure element
               if grep -q "testcase name=\"$NAME\"" target/surefire-reports/TEST-tests.spotBuyAndSellFlow.xml && \
                  grep -A5 "testcase name=\"$NAME\"" target/surefire-reports/TEST-tests.spotBuyAndSellFlow.xml | grep -q "<failure"; then
-                echo "| $NAME | ❌ Failed | ${TTIME}s |" >> $GITHUB_STEP_SUMMARY
+                echo "| tests.spotBuyAndSellFlow>>$NAME | ❌ Failed | ${TTIME}s |" >> $GITHUB_STEP_SUMMARY
               else
-                echo "| $NAME | ✅ Passed | ${TTIME}s |" >> $GITHUB_STEP_SUMMARY
+                echo "| tests.spotBuyAndSellFlow>>$NAME | ✅ Passed | ${TTIME}s |" >> $GITHUB_STEP_SUMMARY
               fi
             done
           else
@@ -80,9 +85,15 @@ jobs:
 
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
-          echo "📎 **Full report available in Artifacts → test-report**" >> $GITHUB_STEP_SUMMARY
+          echo "📎 **Full report with screenshots:** [View Report](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/)" >> $GITHUB_STEP_SUMMARY
 
-      - name: Upload test report
+      - name: Prepare report for Pages
+        if: always()
+        run: |
+          mkdir -p pages-output
+          cp target/surefire-reports/custom-report.html pages-output/index.html 2>/dev/null || true
+
+      - name: Upload test report artifact
         uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -90,3 +101,21 @@ jobs:
           path: |
             target/surefire-reports/custom-report.html
             target/screenshots/
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        if: always()
+        with:
+          path: pages-output
+
+  deploy-report:
+    needs: test
+    runs-on: ubuntu-latest
+    if: always()
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
