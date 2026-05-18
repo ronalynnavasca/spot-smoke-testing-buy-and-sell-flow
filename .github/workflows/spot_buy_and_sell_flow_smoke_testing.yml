@@ -67,18 +67,34 @@ jobs:
             echo "| Test Method | Status | Duration |" >> $GITHUB_STEP_SUMMARY
             echo "|-------------|--------|----------|" >> $GITHUB_STEP_SUMMARY
 
-            # Parse individual test cases
-            grep -o '<testcase[^>]*>' target/surefire-reports/TEST-tests.spotBuyAndSellFlow.xml | while read -r line; do
-              NAME=$(echo "$line" | grep -o 'name="[^"]*"' | sed 's/name="//;s/"//')
-              TTIME=$(echo "$line" | grep -o 'time="[^"]*"' | sed 's/time="//;s/"//')
-              # Check if this test has a failure element
-              if grep -q "testcase name=\"$NAME\"" target/surefire-reports/TEST-tests.spotBuyAndSellFlow.xml && \
-                 grep -A5 "testcase name=\"$NAME\"" target/surefire-reports/TEST-tests.spotBuyAndSellFlow.xml | grep -q "<failure"; then
-                echo "| tests.spotBuyAndSellFlow>>$NAME | ❌ Failed | ${TTIME}s |" >> $GITHUB_STEP_SUMMARY
-              else
-                echo "| tests.spotBuyAndSellFlow>>$NAME | ✅ Passed | ${TTIME}s |" >> $GITHUB_STEP_SUMMARY
-              fi
-            done
+            # Parse individual test cases using awk to correctly detect failures
+            awk '
+              /<testcase / {
+                name = ""; ttime = ""
+                if (match($0, /name="[^"]*"/)) {
+                  name = substr($0, RSTART+6, RLENGTH-7)
+                }
+                if (match($0, /time="[^"]*"/)) {
+                  ttime = substr($0, RSTART+6, RLENGTH-7)
+                }
+                failed = 0
+                # Self-closing testcase tag means passed (no failure child)
+                if ($0 ~ /\/>/) {
+                  failed = 0
+                } else {
+                  # Read until closing </testcase> to check for <failure
+                  while ((getline line) > 0) {
+                    if (line ~ /<failure/) { failed = 1 }
+                    if (line ~ /<\/testcase>/) { break }
+                  }
+                }
+                if (failed) {
+                  printf "| tests.spotBuyAndSellFlow>>%s | ❌ Failed | %ss |\n", name, ttime
+                } else {
+                  printf "| tests.spotBuyAndSellFlow>>%s | ✅ Passed | %ss |\n", name, ttime
+                }
+              }
+            ' target/surefire-reports/TEST-tests.spotBuyAndSellFlow.xml >> $GITHUB_STEP_SUMMARY
           else
             echo "⚠️ No test results found." >> $GITHUB_STEP_SUMMARY
           fi
