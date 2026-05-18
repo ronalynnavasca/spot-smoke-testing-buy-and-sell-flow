@@ -28,7 +28,7 @@ jobs:
           sleep 5
 
       - name: Run tests
-        run: mvn test -Dtest=tests.spotBuyAndSellFlow || true
+        run: mvn test -Dtest=tests.androidSpotBuyAndSellFlow || true
 
       - name: Generate Job Summary
         if: always()
@@ -37,7 +37,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
 
           # Parse test results from surefire report
-          if [ -f target/surefire-reports/TEST-tests.spotBuyAndSellFlow.xml ]; then
+          if [ -f target/surefire-reports/TEST-tests.androidSpotBuyAndSellFlow.xml ]; then
 
             echo "### 📝 Test Details" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
@@ -76,12 +76,12 @@ jobs:
                     }
                   }
                   if (failed) {
-                    printf "| tests.spotBuyAndSellFlow>>%s | ❌ Failed | %ss |\n", name, ttime
+                    printf "| tests.androidSpotBuyAndSellFlow>>%s | ❌ Failed | %ss |\n", name, ttime
                   } else {
-                    printf "| tests.spotBuyAndSellFlow>>%s | ✅ Passed | %ss |\n", name, ttime
+                    printf "| tests.androidSpotBuyAndSellFlow>>%s | ✅ Passed | %ss |\n", name, ttime
                   }
                 }
-              ' target/surefire-reports/TEST-tests.spotBuyAndSellFlow.xml >> $GITHUB_STEP_SUMMARY
+              ' target/surefire-reports/TEST-tests.androidSpotBuyAndSellFlow.xml >> $GITHUB_STEP_SUMMARY
             fi
           else
             echo "⚠️ No test results found." >> $GITHUB_STEP_SUMMARY

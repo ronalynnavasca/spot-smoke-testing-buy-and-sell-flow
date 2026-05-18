@@ -32,7 +32,7 @@ import org.testng.ITestResult;
 import org.testng.Reporter;
 import org.testng.annotations.AfterSuite;
 
-public class spotBuyAndSellFlow {
+public class androidSpotBuyAndSellFlow {
 
     private AndroidDriver driver;
 
@@ -115,7 +115,7 @@ public class spotBuyAndSellFlow {
             html.append("<h1>Test Execution Report</h1>");
             html.append("<div class='report-meta'>");
             html.append("<div class='report-meta-item'><span>Suite: </span>Spot Buy &amp; Sell Flow</div>");
-            html.append("<div class='report-meta-item'><span>Class: </span>tests.spotBuyAndSellFlow</div>");
+            html.append("<div class='report-meta-item'><span>Class: </span>tests.androidSpotBuyAndSellFlow</div>");
             html.append("<div class='report-meta-item'><span>Date: </span>").append(dateStr).append("</div>");
             html.append("<div class='report-meta-item'><span>Device: </span>Android</div>");
             html.append("</div></div>");
@@ -139,7 +139,7 @@ public class spotBuyAndSellFlow {
                         String overallStatus = testHasFailure ? "FAILED" : "PASSED";
                         String statusTagClass = testHasFailure ? "status-tag-failed" : "status-tag-passed";
                         html.append("<div class='test-section'>");
-                        html.append("<div class='test-header'>tests.spotBuyAndSellFlow#").append(lastTest).append("</div>");
+                        html.append("<div class='test-header'>tests.androidSpotBuyAndSellFlow#").append(lastTest).append("</div>");
                         html.append("<div class='test-info'>");
                         html.append("<span class='badge badge-total'>Total: ").append(testTotal).append("</span>");
                         html.append("<span class='badge badge-passed'>Passed: ").append(testPassed).append("</span>");
