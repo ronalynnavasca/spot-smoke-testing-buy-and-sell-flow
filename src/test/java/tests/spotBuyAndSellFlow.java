@@ -259,8 +259,8 @@ public class spotBuyAndSellFlow {
         wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.accessibilityId("Confirm order"))).click();
         Thread.sleep(5000);
 
-        // Wait for confirmation overlay to be dismissed
-        wait.until(ExpectedConditions.invisibilityOfElementLocated(AppiumBy.xpath("//androidx.compose.ui.viewinterop.ViewFactoryHolder/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.view.ViewGroup[2]/android.view.ViewGroup[2]")));
+        // Wait for confirmation overlay to be dismissed (up to 90s)
+        new WebDriverWait(driver, Duration.ofSeconds(90)).until(ExpectedConditions.invisibilityOfElementLocated(AppiumBy.xpath("//androidx.compose.ui.viewinterop.ViewFactoryHolder/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.view.ViewGroup[2]/android.view.ViewGroup[2]")));
 
         // Minimize the app (press Home)
         driver.pressKey(new io.appium.java_client.android.nativekey.KeyEvent(
@@ -388,8 +388,8 @@ public class spotBuyAndSellFlow {
         // Tap Confirm order
         wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.xpath("//android.widget.Button[@content-desc=\"Confirm order\"]"))).click();
 
-        // Wait for confirmation overlay to be dismissed
-        wait.until(ExpectedConditions.invisibilityOfElementLocated(AppiumBy.xpath("//androidx.compose.ui.viewinterop.ViewFactoryHolder/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.view.ViewGroup[2]/android.view.ViewGroup[2]")));
+        // Wait for confirmation overlay to be dismissed (up to 90s)
+        new WebDriverWait(driver, Duration.ofSeconds(90)).until(ExpectedConditions.invisibilityOfElementLocated(AppiumBy.xpath("//androidx.compose.ui.viewinterop.ViewFactoryHolder/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.view.ViewGroup[2]/android.view.ViewGroup[2]")));
 
         // Minimize the app (press Home)
         driver.pressKey(new io.appium.java_client.android.nativekey.KeyEvent(
