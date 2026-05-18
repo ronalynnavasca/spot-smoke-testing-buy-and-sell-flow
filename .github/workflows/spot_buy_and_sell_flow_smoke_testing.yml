@@ -1,8 +1,6 @@
 name: "Smoke Testing: Spot Buy and Sell Flow"
 
 on:
-  push:
-    branches: [master]
   workflow_dispatch:
 
 jobs:
