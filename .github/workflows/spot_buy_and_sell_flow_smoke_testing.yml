@@ -25,6 +25,63 @@ jobs:
       - name: Run tests
         run: mvn test -Dtest=tests.spotBuyAndSellFlow || true
 
+      - name: Generate Job Summary
+        if: always()
+        run: |
+          echo "## 📋 Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Parse test results from surefire report
+          if [ -f target/surefire-reports/TEST-tests.spotBuyAndSellFlow.xml ]; then
+            TESTS=$(grep -o 'tests="[0-9]*"' target/surefire-reports/TEST-tests.spotBuyAndSellFlow.xml | head -1 | grep -o '[0-9]*')
+            FAILURES=$(grep -o 'failures="[0-9]*"' target/surefire-reports/TEST-tests.spotBuyAndSellFlow.xml | head -1 | grep -o '[0-9]*')
+            ERRORS=$(grep -o 'errors="[0-9]*"' target/surefire-reports/TEST-tests.spotBuyAndSellFlow.xml | head -1 | grep -o '[0-9]*')
+            SKIPPED=$(grep -o 'skipped="[0-9]*"' target/surefire-reports/TEST-tests.spotBuyAndSellFlow.xml | head -1 | grep -o '[0-9]*')
+            TIME=$(grep -o 'time="[^"]*"' target/surefire-reports/TEST-tests.spotBuyAndSellFlow.xml | head -1 | grep -o '"[^"]*"' | tr -d '"')
+            PASSED=$((TESTS - FAILURES - ERRORS - SKIPPED))
+
+            if [ "$FAILURES" = "0" ] && [ "$ERRORS" = "0" ]; then
+              echo "### ✅ All Tests Passed" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "### ❌ Some Tests Failed" >> $GITHUB_STEP_SUMMARY
+            fi
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Metric | Count |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Total Tests | $TESTS |" >> $GITHUB_STEP_SUMMARY
+            echo "| ✅ Passed | $PASSED |" >> $GITHUB_STEP_SUMMARY
+            echo "| ❌ Failed | $FAILURES |" >> $GITHUB_STEP_SUMMARY
+            echo "| ⚠️ Errors | $ERRORS |" >> $GITHUB_STEP_SUMMARY
+            echo "| ⏭️ Skipped | $SKIPPED |" >> $GITHUB_STEP_SUMMARY
+            echo "| ⏱️ Duration | ${TIME}s |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            echo "---" >> $GITHUB_STEP_SUMMARY
+            echo "### 📝 Test Details" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Test Method | Status | Duration |" >> $GITHUB_STEP_SUMMARY
+            echo "|-------------|--------|----------|" >> $GITHUB_STEP_SUMMARY
+
+            # Parse individual test cases
+            grep -o '<testcase[^>]*>' target/surefire-reports/TEST-tests.spotBuyAndSellFlow.xml | while read -r line; do
+              NAME=$(echo "$line" | grep -o 'name="[^"]*"' | sed 's/name="//;s/"//')
+              TTIME=$(echo "$line" | grep -o 'time="[^"]*"' | sed 's/time="//;s/"//')
+              # Check if this test has a failure element
+              if grep -q "testcase name=\"$NAME\"" target/surefire-reports/TEST-tests.spotBuyAndSellFlow.xml && \
+                 grep -A5 "testcase name=\"$NAME\"" target/surefire-reports/TEST-tests.spotBuyAndSellFlow.xml | grep -q "<failure"; then
+                echo "| $NAME | ❌ Failed | ${TTIME}s |" >> $GITHUB_STEP_SUMMARY
+              else
+                echo "| $NAME | ✅ Passed | ${TTIME}s |" >> $GITHUB_STEP_SUMMARY
+              fi
+            done
+          else
+            echo "⚠️ No test results found." >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "📎 **Full report available in Artifacts → test-report**" >> $GITHUB_STEP_SUMMARY
+
       - name: Upload test report
         uses: actions/upload-artifact@v4
         if: always()
