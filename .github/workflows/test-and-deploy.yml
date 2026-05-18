@@ -1,4 +1,4 @@
-name: Run Appium Tests
+name: "Smoke Testing: Spot Buy and Sell Flow"
 
 on:
   push:
@@ -8,6 +8,8 @@ on:
 jobs:
   test:
     runs-on: self-hosted
+    env:
+      NODE_TLS_REJECT_UNAUTHORIZED: '0'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
