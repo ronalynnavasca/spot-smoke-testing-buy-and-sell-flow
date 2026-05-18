@@ -156,12 +156,8 @@ jobs:
             STATUS_TEXT="Failed"
           fi
 
-          curl -s -X POST https://slack.com/api/chat.postMessage \
-            -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d @- <<EOF
+          PAYLOAD=$(cat <<EOF
           {
-            "channel": "D06CM34G90A",
             "blocks": [
               {
                 "type": "section",
@@ -196,6 +192,21 @@ jobs:
             ]
           }
           EOF
+          )
+
+          # Send to DM
+          echo "$PAYLOAD" | jq --arg ch "D06CM34G90A" '. + {channel: $ch}' | \
+            curl -s -X POST https://slack.com/api/chat.postMessage \
+              -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d @-
+
+          # Send to #auto-report channel
+          echo "$PAYLOAD" | jq --arg ch "C0AKNRDA49Z" '. + {channel: $ch}' | \
+            curl -s -X POST https://slack.com/api/chat.postMessage \
+              -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d @-
 
   deploy-report:
     needs: android-spot-smoke-testing-buy-and-sell-flow
