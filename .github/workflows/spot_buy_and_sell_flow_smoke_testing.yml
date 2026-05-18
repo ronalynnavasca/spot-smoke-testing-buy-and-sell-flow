@@ -103,6 +103,19 @@ jobs:
           echo "---" >> $GITHUB_STEP_SUMMARY
           echo "📎 **Full report with screenshots:** [View Report](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/)" >> $GITHUB_STEP_SUMMARY
 
+      - name: Ensure gtar is available for Pages artifact
+        if: always()
+        run: |
+          if ! command -v gtar &> /dev/null; then
+            if command -v brew &> /dev/null; then
+              brew install gnu-tar
+            fi
+            # Fallback: symlink tar as gtar if gnu-tar not available
+            if ! command -v gtar &> /dev/null; then
+              sudo ln -sf $(which tar) /usr/local/bin/gtar
+            fi
+          fi
+
       - name: Prepare report for Pages
         if: always()
         run: |
