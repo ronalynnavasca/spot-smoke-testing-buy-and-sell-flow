@@ -1,4 +1,4 @@
-name: "Smoke Testing: Spot Buy and Sell Flow"
+name: "Android Smoke Testing: Spot Buy and Sell Flow"
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ permissions:
   id-token: write
 
 jobs:
-  test:
+  android-spot-smoke-testing-buy-and-sell-flow:
     runs-on: self-hosted
     env:
       NODE_TLS_REJECT_UNAUTHORIZED: '0'
@@ -149,7 +149,7 @@ jobs:
           path: pages-output
 
   deploy-report:
-    needs: test
+    needs: android-spot-smoke-testing-buy-and-sell-flow
     runs-on: ubuntu-latest
     if: always()
     environment:
