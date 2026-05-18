@@ -259,6 +259,9 @@ public class spotBuyAndSellFlow {
         wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.accessibilityId("Confirm order"))).click();
         Thread.sleep(5000);
 
+        // Wait for confirmation overlay to be dismissed
+        wait.until(ExpectedConditions.invisibilityOfElementLocated(AppiumBy.xpath("//androidx.compose.ui.viewinterop.ViewFactoryHolder/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.view.ViewGroup[2]/android.view.ViewGroup[2]")));
+
         // Minimize the app (press Home)
         driver.pressKey(new io.appium.java_client.android.nativekey.KeyEvent(
                 io.appium.java_client.android.nativekey.AndroidKey.HOME));
