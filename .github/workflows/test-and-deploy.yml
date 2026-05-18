@@ -1,24 +1,13 @@
-name: Run Appium Tests & Deploy Report
+name: Run Appium Tests
 
 on:
   push:
     branches: [master]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
-
 jobs:
   test:
     runs-on: self-hosted
-    env:
-      NODE_TLS_REJECT_UNAUTHORIZED: '0'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -36,34 +25,11 @@ jobs:
       - name: Run tests
         run: mvn test -Dtest=tests.spotBuyAndSellFlow || true
 
-      - name: Prepare report for Pages
-        run: |
-          TIMESTAMP=$(date +%Y-%m-%d_%H%M%S)
-          mkdir -p pages-output/reports/$TIMESTAMP
-          cp target/surefire-reports/custom-report.html pages-output/reports/$TIMESTAMP/index.html 2>/dev/null || true
-          cp -r target/screenshots pages-output/reports/$TIMESTAMP/ 2>/dev/null || true
-          # Create index page listing all reports
-          echo "<!DOCTYPE html><html><head><meta charset='utf-8'><title>Test Reports</title>" > pages-output/index.html
-          echo "<style>body{font-family:Arial,sans-serif;margin:40px;}a{display:block;margin:10px 0;font-size:18px;}</style>" >> pages-output/index.html
-          echo "</head><body><h1>Test Reports</h1>" >> pages-output/index.html
-          for dir in $(ls -rd pages-output/reports/*/); do
-            name=$(basename $dir)
-            echo "<a href='reports/$name/'>$name</a>" >> pages-output/index.html
-          done
-          echo "</body></html>" >> pages-output/index.html
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Upload test report
+        uses: actions/upload-artifact@v4
+        if: always()
         with:
-          path: pages-output
-
-  deploy:
-    needs: test
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          name: test-report
+          path: |
+            target/surefire-reports/custom-report.html
+            target/screenshots/
