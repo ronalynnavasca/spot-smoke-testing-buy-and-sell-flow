@@ -106,7 +106,7 @@ public class spotBuyAndSellFlow {
                     html.append("<div class='test-section'>");
                     html.append("<div class='test-name'>tests.spotBuyAndSellFlow#").append(testName).append("</div>");
                     html.append("<table class='messages-table'>");
-                    html.append("<tr><th>Messages</th><th>Screenshot</th><th>Status</th></tr>");
+                    html.append("<tr><th>Cases</th><th>Screenshot</th><th>Status</th></tr>");
                     lastTest = testName;
                 }
 
@@ -243,7 +243,7 @@ public class spotBuyAndSellFlow {
 
         // Assert pay amount matches input amount
         String payAmount = wait.until(ExpectedConditions.visibilityOfElementLocated(AppiumBy.xpath("//android.widget.TextView[@resource-id=\"spot-trade-sheet.pay-amount-text\"]"))).getText();
-        takeScreenshot("buy_pay_amount_review");
+        takeScreenshot("input_and_confirmation_page_validation");
         if (payAmount.startsWith("<")) {
             double threshold = Double.parseDouble(payAmount.substring(1));
             double actualInput = Double.parseDouble("0.01");
@@ -276,7 +276,7 @@ public class spotBuyAndSellFlow {
             }
             return true;
         });
-        takeScreenshot("buy_notification_received");
+        takeScreenshot("buy_order_notification_received");
         System.out.println("PASSED: Notification 'Order successful' received.");
 
         // Get notification body text and extract BTC amount
@@ -288,7 +288,7 @@ public class spotBuyAndSellFlow {
         System.out.println("Amount in BTC from notification: " + confirmedAmountInBTC);
 
         // Assert amountInBTC matches confirmedAmountInBTC
-        takeScreenshot("buy_assert_btc_amount_matches_notification");
+        takeScreenshot("buy_btc_amount_matches_notification");
         Assert.assertEquals(confirmedAmountInBTC, amountInBTC,
                 "BTC amount in review (" + amountInBTC + ") should match notification (" + confirmedAmountInBTC + ")");
         System.out.println("PASSED: Amount in BTC matches between review and notification.");
@@ -299,20 +299,20 @@ public class spotBuyAndSellFlow {
 
         // Assert "Success" text is displayed
         String successText = wait.until(ExpectedConditions.visibilityOfElementLocated(AppiumBy.xpath("//android.widget.TextView[@text=\"Success\"]"))).getText();
-        takeScreenshot("buy_success_screen");
+        takeScreenshot("buy_order_success_history_screen");
         Assert.assertEquals(successText, "Success", "Success text should be displayed");
         System.out.println("PASSED: Success text is displayed.");
 
-        // Assert BTC amount on success screen matches confirmedAmountInBTC
+        // Assert token amount on success screen matches confirmedAmount
         String successAmountText = wait.until(ExpectedConditions.visibilityOfElementLocated(AppiumBy.xpath("//android.widget.TextView[contains(@text, 'CDCBTC') or @text='" + confirmedAmountInBTC + "']"))).getText();
-        takeScreenshot("buy_success_btc_amount");
+        takeScreenshot("buy_token_amount_matches_token_buy_history");
         Assert.assertTrue(successAmountText.contains(confirmedAmountInBTC) || confirmedAmountInBTC.contains(successAmountText),
                 "Amount on success screen (" + successAmountText + ") should match confirmed amount (" + confirmedAmountInBTC + ")");
         System.out.println("PASSED: Amount on success screen matches confirmed BTC amount.");
 
         // Assert total paid matches the input value
         String totalPaid = wait.until(ExpectedConditions.visibilityOfElementLocated(AppiumBy.xpath("//android.widget.TextView[@text=\"$0.01\"]"))).getText();
-        takeScreenshot("buy_total_paid");
+        takeScreenshot("buy_total_paid_matches_input");
         Assert.assertEquals(totalPaid, "$0.01",
                 "Total paid (" + totalPaid + ") should match input value ($0.01)");
         System.out.println("PASSED: Total paid matches input value.");
@@ -381,12 +381,12 @@ public class spotBuyAndSellFlow {
         // }
         // System.out.println("PASSED: Pay amount matches input amount.");
 
-        // Store "You'll get" amount
-        String youllGet = wait.until(ExpectedConditions.visibilityOfElementLocated(AppiumBy.xpath("//android.widget.TextView[@resource-id=\"spot-trade-sheet.receive-amount-text\"]"))).getText();
-        System.out.println("You'll get: " + youllGet);
 
         // Tap Confirm order
         wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.xpath("//android.widget.Button[@content-desc=\"Confirm order\"]"))).click();
+
+        // Wait for confirmation overlay to be dismissed
+        wait.until(ExpectedConditions.invisibilityOfElementLocated(AppiumBy.xpath("//androidx.compose.ui.viewinterop.ViewFactoryHolder/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.view.ViewGroup[2]/android.view.ViewGroup[2]")));
 
         // Minimize the app (press Home)
         driver.pressKey(new io.appium.java_client.android.nativekey.KeyEvent(
@@ -417,7 +417,7 @@ public class spotBuyAndSellFlow {
         System.out.println("Amount from notification: " + notifAmount);
 
         // Assert notification amount matches input amount (notification may truncate/round or show "<" prefix)
-        takeScreenshot("sell_assert_amount_matches_notification");
+        takeScreenshot("sell_input_amount_matches_notification");
         if (notifAmount.startsWith("<")) {
             double threshold = Double.parseDouble(notifAmount.substring(1));
             double inputAmountValue = Double.parseDouble(inputAmount);
@@ -437,20 +437,26 @@ public class spotBuyAndSellFlow {
 
         // Assert "Success" text is displayed
         String successText = wait.until(ExpectedConditions.visibilityOfElementLocated(AppiumBy.xpath("//android.widget.TextView[@text=\"Success\"]"))).getText();
-        takeScreenshot("sell_success_screen");
+        takeScreenshot("sell_order_success_history_screen");
         Assert.assertEquals(successText, "Success", "Success text should be displayed");
         System.out.println("PASSED: Success text is displayed.");
 
-        // Assert BTC amount on success screen matches notification amount
+        // Assert token amount on success screen matches notification amount
         String successAmountText = wait.until(ExpectedConditions.visibilityOfElementLocated(AppiumBy.xpath("//android.widget.TextView[contains(@text, 'CDCBTC') or @text='" + notifAmount + "']"))).getText();
-        takeScreenshot("sell_success_btc_amount");
+        takeScreenshot("sell_notification_token_amount_matches_token_sell_history");
         Assert.assertTrue(successAmountText.contains(notifAmount) || notifAmount.contains(successAmountText),
                 "Amount on success screen (" + successAmountText + ") should match notification amount (" + notifAmount + ")");
         System.out.println("PASSED: Amount on success screen matches notification amount.");
 
         // Take final screenshot of success screen
-        takeScreenshot("sell_success_complete");
+        takeScreenshot("sell_successully_completed");
         System.out.println("PASSED: Sell order completed successfully.");
+
+         // Dismiss the success screen by pressing back
+        driver.pressKey(new io.appium.java_client.android.nativekey.KeyEvent(
+                io.appium.java_client.android.nativekey.AndroidKey.BACK));
+        Thread.sleep(2000);
+
     }
 
     @AfterMethod
