@@ -64,37 +64,48 @@ jobs:
             echo "---" >> $GITHUB_STEP_SUMMARY
             echo "### 📝 Test Details" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "| Test Method | Status | Duration |" >> $GITHUB_STEP_SUMMARY
-            echo "|-------------|--------|----------|" >> $GITHUB_STEP_SUMMARY
 
-            # Parse individual test cases using awk to correctly detect failures
-            awk '
-              /<testcase / {
-                name = ""; ttime = ""
-                if (match($0, /name="[^"]*"/)) {
-                  name = substr($0, RSTART+6, RLENGTH-7)
-                }
-                if (match($0, /time="[^"]*"/)) {
-                  ttime = substr($0, RSTART+6, RLENGTH-7)
-                }
-                failed = 0
-                # Self-closing testcase tag means passed (no failure child)
-                if ($0 ~ /\/>/) {
+            # Use checkpoint file if available for per-assertion breakdown
+            if [ -f target/surefire-reports/checkpoint-results.txt ]; then
+              echo "| Test Method | Assertion | Status |" >> $GITHUB_STEP_SUMMARY
+              echo "|-------------|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+              while IFS='|' read -r test_name step_name status; do
+                if [ "$status" = "PASSED" ]; then
+                  echo "| $test_name | $step_name | ✅ |" >> $GITHUB_STEP_SUMMARY
+                else
+                  echo "| $test_name | $step_name | ❌ |" >> $GITHUB_STEP_SUMMARY
+                fi
+              done < target/surefire-reports/checkpoint-results.txt
+            else
+              # Fallback to XML-only approach
+              echo "| Test Method | Status | Duration |" >> $GITHUB_STEP_SUMMARY
+              echo "|-------------|--------|----------|" >> $GITHUB_STEP_SUMMARY
+              awk '
+                /<testcase / {
+                  name = ""; ttime = ""
+                  if (match($0, /name="[^"]*"/)) {
+                    name = substr($0, RSTART+6, RLENGTH-7)
+                  }
+                  if (match($0, /time="[^"]*"/)) {
+                    ttime = substr($0, RSTART+6, RLENGTH-7)
+                  }
                   failed = 0
-                } else {
-                  # Read until closing </testcase> to check for <failure
-                  while ((getline line) > 0) {
-                    if (line ~ /<failure/) { failed = 1 }
-                    if (line ~ /<\/testcase>/) { break }
+                  if ($0 ~ /\/>/) {
+                    failed = 0
+                  } else {
+                    while ((getline line) > 0) {
+                      if (line ~ /<failure/) { failed = 1 }
+                      if (line ~ /<\/testcase>/) { break }
+                    }
+                  }
+                  if (failed) {
+                    printf "| tests.spotBuyAndSellFlow>>%s | ❌ Failed | %ss |\n", name, ttime
+                  } else {
+                    printf "| tests.spotBuyAndSellFlow>>%s | ✅ Passed | %ss |\n", name, ttime
                   }
                 }
-                if (failed) {
-                  printf "| tests.spotBuyAndSellFlow>>%s | ❌ Failed | %ss |\n", name, ttime
-                } else {
-                  printf "| tests.spotBuyAndSellFlow>>%s | ✅ Passed | %ss |\n", name, ttime
-                }
-              }
-            ' target/surefire-reports/TEST-tests.spotBuyAndSellFlow.xml >> $GITHUB_STEP_SUMMARY
+              ' target/surefire-reports/TEST-tests.spotBuyAndSellFlow.xml >> $GITHUB_STEP_SUMMARY
+            fi
           else
             echo "⚠️ No test results found." >> $GITHUB_STEP_SUMMARY
           fi

@@ -128,6 +128,18 @@ public class spotBuyAndSellFlow {
             writer.write(html.toString());
             writer.close();
             System.out.println("Custom report generated: " + reportFile.getAbsolutePath());
+
+            // Write checkpoint results file for GitHub Actions job summary
+            File checkpointFile = new File("target/surefire-reports/checkpoint-results.txt");
+            FileWriter checkpointWriter = new FileWriter(checkpointFile);
+            for (String[] entry : reportEntries) {
+                String testName = entry[0];
+                String stepName = entry[1];
+                String status = entry[3];
+                checkpointWriter.write(testName + "|" + stepName + "|" + status + "\n");
+            }
+            checkpointWriter.close();
+            System.out.println("Checkpoint results written: " + checkpointFile.getAbsolutePath());
         } catch (IOException e) {
             System.out.println("Failed to generate custom report: " + e.getMessage());
         }
@@ -259,9 +271,6 @@ public class spotBuyAndSellFlow {
         wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.accessibilityId("Confirm order"))).click();
         Thread.sleep(5000);
 
-        // Wait for confirmation overlay to be dismissed (up to 90s)
-        new WebDriverWait(driver, Duration.ofSeconds(90)).until(ExpectedConditions.invisibilityOfElementLocated(AppiumBy.xpath("//androidx.compose.ui.viewinterop.ViewFactoryHolder/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.view.ViewGroup[2]/android.view.ViewGroup[2]")));
-
         // Minimize the app (press Home)
         driver.pressKey(new io.appium.java_client.android.nativekey.KeyEvent(
                 io.appium.java_client.android.nativekey.AndroidKey.HOME));
@@ -369,27 +378,13 @@ public class spotBuyAndSellFlow {
         // Tap Review order
         wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.accessibilityId("Review order"))).click();
 
-        ////REMOVED for thge meantime 
-        // // Verify pay amount matches input amount
-        // String payAmount = wait.until(ExpectedConditions.visibilityOfElementLocated(AppiumBy.xpath("//android.widget.TextView[@resource-id=\"spot-trade-sheet.pay-amount-text\"]"))).getText();
-        // takeScreenshot("sell_pay_amount_review");
-        // if (payAmount.startsWith("<")) {
-        //     double threshold = Double.parseDouble(payAmount.substring(1));
-        //     double actualInput = Double.parseDouble(inputAmount);
-        //     Assert.assertTrue(actualInput < threshold,
-        //             "Input amount (" + inputAmount + ") should be less than " + threshold);
-        // } else {
-        //     Assert.assertEquals(payAmount, inputAmount,
-        //             "Pay amount (" + payAmount + ") should match input amount (" + inputAmount + ")");
-        // }
-        // System.out.println("PASSED: Pay amount matches input amount.");
-
+       
 
         // Tap Confirm order
         wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.xpath("//android.widget.Button[@content-desc=\"Confirm order\"]"))).click();
 
-        // Wait for confirmation overlay to be dismissed (up to 90s)
-        new WebDriverWait(driver, Duration.ofSeconds(90)).until(ExpectedConditions.invisibilityOfElementLocated(AppiumBy.xpath("//androidx.compose.ui.viewinterop.ViewFactoryHolder/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.view.ViewGroup[2]/android.view.ViewGroup[2]")));
+        // Wait for confirmation overlay to be dismissed
+        wait.until(ExpectedConditions.invisibilityOfElementLocated(AppiumBy.xpath("//androidx.compose.ui.viewinterop.ViewFactoryHolder/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.view.ViewGroup[2]/android.view.ViewGroup[2]")));
 
         // Minimize the app (press Home)
         driver.pressKey(new io.appium.java_client.android.nativekey.KeyEvent(
