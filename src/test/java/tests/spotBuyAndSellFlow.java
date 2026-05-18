@@ -78,48 +78,123 @@ public class spotBuyAndSellFlow {
             html.append("<!DOCTYPE html><html><head><meta charset='utf-8'>");
             html.append("<title>Spot Buy & Sell Flow - Test Report</title>");
             html.append("<style>");
-            html.append("body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }");
-            html.append(".suite-header { background: #4CAF50; color: white; padding: 15px; border-radius: 5px; margin-bottom: 20px; }");
-            html.append(".test-section { background: white; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 20px; padding: 15px; }");
-            html.append(".test-name { font-size: 16px; font-weight: bold; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }");
-            html.append(".messages-table { width: 100%; border-collapse: collapse; }");
-            html.append(".messages-table th { background: #f0f0f0; padding: 10px; text-align: left; border: 1px solid #ddd; }");
-            html.append(".messages-table td { padding: 10px; border: 1px solid #ddd; vertical-align: top; }");
-            html.append(".step-name { font-weight: bold; font-size: 14px; margin-bottom: 5px; }");
-            html.append(".screenshot img { max-width: 300px; border: 1px solid #ccc; border-radius: 3px; }");
-            html.append(".status-passed { color: white; background: #4CAF50; padding: 5px 15px; border-radius: 3px; font-weight: bold; display: inline-block; }");
-            html.append(".status-failed { color: white; background: #f44336; padding: 5px 15px; border-radius: 3px; font-weight: bold; display: inline-block; }");
+            html.append("body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 20px; background: #f8f9fa; }");
+            html.append("h1 { color: #333; margin-bottom: 5px; }");
+            html.append(".report-header { background: white; padding: 20px 30px; border-radius: 8px; margin-bottom: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }");
+            html.append(".report-header p { color: #666; margin: 5px 0; }");
+            html.append(".test-section { background: white; border-radius: 8px; margin-bottom: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden; }");
+            html.append(".test-header { background: #2c3e50; color: white; padding: 15px 20px; }");
+            html.append(".test-header h3 { margin: 0 0 5px 0; font-size: 16px; }");
+            html.append(".test-details { background: #ecf0f1; padding: 12px 20px; border-bottom: 1px solid #ddd; font-size: 13px; color: #555; }");
+            html.append(".test-details span { margin-right: 20px; }");
+            html.append(".test-details .label { font-weight: bold; color: #333; }");
+            html.append(".cases-table { width: 100%; border-collapse: collapse; }");
+            html.append(".cases-table th { background: #f7f9fc; padding: 12px 15px; text-align: left; border-bottom: 2px solid #dee2e6; font-size: 13px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }");
+            html.append(".cases-table td { padding: 12px 15px; border-bottom: 1px solid #eee; vertical-align: middle; }");
+            html.append(".cases-table tr:hover { background: #f8f9fa; }");
+            html.append(".case-num { font-weight: bold; color: #888; width: 40px; text-align: center; }");
+            html.append(".case-name { font-weight: 500; color: #333; }");
+            html.append(".screenshot-cell img { max-width: 250px; max-height: 150px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; transition: transform 0.2s; }");
+            html.append(".screenshot-cell img:hover { transform: scale(1.05); }");
+            html.append(".status-passed { color: white; background: #27ae60; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; display: inline-block; }");
+            html.append(".status-failed { color: white; background: #e74c3c; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; display: inline-block; }");
+            html.append(".summary { display: flex; gap: 15px; margin-top: 8px; }");
+            html.append(".summary-badge { padding: 3px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; }");
+            html.append(".badge-pass { background: #d4edda; color: #155724; }");
+            html.append(".badge-fail { background: #f8d7da; color: #721c24; }");
+            html.append(".badge-total { background: #d1ecf1; color: #0c5460; }");
             html.append("</style></head><body>");
-            html.append("<div class='suite-header'><h2>Surefire Test Report</h2><p>Spot Buy & Sell Flow</p></div>");
 
+            // Report header
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            html.append("<div class='report-header'>");
+            html.append("<h1>Test Execution Report</h1>");
+            html.append("<p><strong>Suite:</strong> Spot Buy & Sell Flow</p>");
+            html.append("<p><strong>Class:</strong> tests.spotBuyAndSellFlow</p>");
+            html.append("<p><strong>Date:</strong> ").append(timestamp).append("</p>");
+            html.append("<p><strong>Device:</strong> Google Pixel 10 (Android 16)</p>");
+            html.append("</div>");
+
+            // Group entries by test
             String lastTest = "";
+            int caseNum = 0;
+            int totalPassed = 0;
+            int totalFailed = 0;
+
             for (String[] entry : reportEntries) {
                 String testName = entry[0];
                 String stepName = entry[1];
                 String base64 = entry[2];
                 String status = entry[3];
 
+                if (status.equals("PASSED")) totalPassed++;
+                else totalFailed++;
+
                 if (!testName.equals(lastTest)) {
                     if (!lastTest.isEmpty()) {
                         html.append("</table></div>");
                     }
+                    caseNum = 0;
+
+                    // Count pass/fail for this test
+                    int testPass = 0, testFail = 0;
+                    for (String[] e : reportEntries) {
+                        if (e[0].equals(testName)) {
+                            if (e[3].equals("PASSED")) testPass++;
+                            else testFail++;
+                        }
+                    }
+
                     html.append("<div class='test-section'>");
-                    html.append("<div class='test-name'>tests.spotBuyAndSellFlow#").append(testName).append("</div>");
-                    html.append("<table class='messages-table'>");
-                    html.append("<tr><th>Cases</th><th>Screenshot</th><th>Status</th></tr>");
+                    html.append("<div class='test-header'>");
+                    html.append("<h3>tests.spotBuyAndSellFlow#").append(testName).append("</h3>");
+                    html.append("<div class='summary'>");
+                    html.append("<span class='summary-badge badge-total'>Total: ").append(testPass + testFail).append("</span>");
+                    html.append("<span class='summary-badge badge-pass'>Passed: ").append(testPass).append("</span>");
+                    if (testFail > 0) {
+                        html.append("<span class='summary-badge badge-fail'>Failed: ").append(testFail).append("</span>");
+                    }
+                    html.append("</div></div>");
+
+                    // Test details
+                    html.append("<div class='test-details'>");
+                    html.append("<span><span class='label'>Test:</span> ").append(testName).append("</span>");
+                    html.append("<span><span class='label'>Description:</span> ");
+                    if (testName.equals("testBuyOrder")) html.append("Verify Buy order flow");
+                    else if (testName.equals("testSellOrder")) html.append("Verify Sell order flow");
+                    else if (testName.equals("testVerifyAppLaunch")) html.append("Verify app launch");
+                    html.append("</span>");
+                    html.append("<span><span class='label'>Status:</span> ");
+                    if (testFail > 0) html.append("<span class='status-failed'>FAILED</span>");
+                    else html.append("<span class='status-passed'>PASSED</span>");
+                    html.append("</span>");
+                    html.append("</div>");
+
+                    html.append("<table class='cases-table'>");
+                    html.append("<tr><th>#</th><th>Cases</th><th>Screenshot</th><th>Status</th></tr>");
                     lastTest = testName;
                 }
 
+                caseNum++;
                 String statusClass = status.equals("PASSED") ? "status-passed" : "status-failed";
                 html.append("<tr>");
-                html.append("<td><div class='step-name'>").append(stepName).append("</div></td>");
-                html.append("<td class='screenshot'><img src='data:image/png;base64,").append(base64).append("'/></td>");
+                html.append("<td class='case-num'>").append(caseNum).append("</td>");
+                html.append("<td class='case-name'>").append(stepName).append("</td>");
+                html.append("<td class='screenshot-cell'><img src='data:image/png;base64,").append(base64).append("'/></td>");
                 html.append("<td><span class='").append(statusClass).append("'>").append(status).append("</span></td>");
                 html.append("</tr>");
             }
             if (!lastTest.isEmpty()) {
                 html.append("</table></div>");
             }
+
+            // Footer summary
+            html.append("<div class='report-header'>");
+            html.append("<p><strong>Total Cases:</strong> ").append(totalPassed + totalFailed);
+            html.append(" | <strong style='color:#27ae60'>Passed:</strong> ").append(totalPassed);
+            html.append(" | <strong style='color:#e74c3c'>Failed:</strong> ").append(totalFailed).append("</p>");
+            html.append("</div>");
+
             html.append("</body></html>");
 
             File reportFile = new File("target/surefire-reports/custom-report.html");
