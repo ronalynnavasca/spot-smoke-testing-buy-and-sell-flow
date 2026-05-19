@@ -240,7 +240,7 @@ public class androidSpotBuyAndSellFlow {
         wait = new WebDriverWait(driver, Duration.ofSeconds(15));
     }
 
-    @Test(description = "Verify app launch")
+    @Test(description = "Verify app launch", priority = 1)
     public void testVerifyAppLaunch() throws InterruptedException {
         // Wait for either "Login with Google" or passcode screen to appear
         Thread.sleep(5000);
@@ -271,7 +271,7 @@ public class androidSpotBuyAndSellFlow {
         }
     }
 
-    @Test(description = "Verify Buy order flow")
+    @Test(description = "Verify Buy order flow", priority = 2)
     public void testBuyOrder() throws InterruptedException {
         // Wait for app to load
         Thread.sleep(5000);
@@ -409,7 +409,7 @@ public class androidSpotBuyAndSellFlow {
     }
 
 
-    @Test(description = "Verify Sell order flow")
+    @Test(description = "Verify Sell order flow", priority = 3)
     public void testSellOrder() throws InterruptedException {
         // Wait for app to load
         Thread.sleep(10000);
