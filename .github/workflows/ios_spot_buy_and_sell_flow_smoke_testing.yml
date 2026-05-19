@@ -1,4 +1,4 @@
-name: "iOS Smoke Testing: Spot Buy and Sell Flow"
+name: "iOS Smoke Testing: Spot Buy and Sell Flow (Not Ready)"
 
 on:
   workflow_dispatch:
