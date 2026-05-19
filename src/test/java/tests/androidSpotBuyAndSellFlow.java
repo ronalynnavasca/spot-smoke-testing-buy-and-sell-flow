@@ -234,7 +234,11 @@ public class androidSpotBuyAndSellFlow {
 
         // Kill and relaunch the app only at the start (first test)
         if (currentTestName.equals("testVerifyAppLaunch")) {
-            driver.terminateApp("com.defi.st.wallet");
+            try {
+                driver.terminateApp("com.defi.st.wallet");
+            } catch (Exception e) {
+                System.out.println("App terminate skipped: " + e.getMessage());
+            }
             driver.activateApp("com.defi.st.wallet");
         }
         wait = new WebDriverWait(driver, Duration.ofSeconds(15));
@@ -529,7 +533,11 @@ public class androidSpotBuyAndSellFlow {
         Thread.sleep(5000);
 
         // Terminate the app - end of testing
-        driver.terminateApp("com.defi.st.wallet");
+        try {
+            driver.terminateApp("com.defi.st.wallet");
+        } catch (Exception e) {
+            System.out.println("App terminate skipped: " + e.getMessage());
+        }
 
     }
 
