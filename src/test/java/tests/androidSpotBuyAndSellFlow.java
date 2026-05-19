@@ -412,7 +412,7 @@ public class androidSpotBuyAndSellFlow {
     @Test(description = "Verify Sell order flow", priority = 3)
     public void testSellOrder() throws InterruptedException {
         // Wait for app to load
-        Thread.sleep(10000);
+        Thread.sleep(5000);
 
         // If "Login with Google" exists, tap it; otherwise enter passcode
         List<WebElement> loginWithGoogle = driver.findElements(AppiumBy.accessibilityId("Login with Google"));
@@ -526,7 +526,7 @@ public class androidSpotBuyAndSellFlow {
          // Dismiss the success screen by pressing back
         driver.pressKey(new io.appium.java_client.android.nativekey.KeyEvent(
                 io.appium.java_client.android.nativekey.AndroidKey.BACK));
-        Thread.sleep(20000);
+        Thread.sleep(5000);
 
         // Terminate the app - end of testing
         driver.terminateApp("com.defi.st.wallet");
