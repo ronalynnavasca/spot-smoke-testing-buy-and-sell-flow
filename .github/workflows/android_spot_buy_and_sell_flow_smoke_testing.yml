@@ -123,3 +123,32 @@ jobs:
         id: deployment
         if: always()
         uses: actions/deploy-pages@v4
+
+      - name: Notify Slack
+        if: always()
+        run: |
+          PASSED=0
+          FAILED=0
+          if [ -f target/surefire-reports/checkpoint-results.txt ]; then
+            PASSED=$(grep -c "|PASSED$" target/surefire-reports/checkpoint-results.txt || true)
+            FAILED=$(grep -c "|FAILED$" target/surefire-reports/checkpoint-results.txt || true)
+          elif [ -f target/surefire-reports/TEST-tests.androidSpotBuyAndSellFlow.xml ]; then
+            TOTAL=$(grep -o 'tests="[0-9]*"' target/surefire-reports/TEST-tests.androidSpotBuyAndSellFlow.xml | head -1 | grep -o '[0-9]*')
+            FAILURES=$(grep -o 'failures="[0-9]*"' target/surefire-reports/TEST-tests.androidSpotBuyAndSellFlow.xml | head -1 | grep -o '[0-9]*')
+            ERRORS=$(grep -o 'errors="[0-9]*"' target/surefire-reports/TEST-tests.androidSpotBuyAndSellFlow.xml | head -1 | grep -o '[0-9]*')
+            FAILED=$((FAILURES + ERRORS))
+            PASSED=$((TOTAL - FAILED))
+          fi
+
+          DATE=$(date '+%Y-%m-%d %H:%M:%S')
+          REPORT_URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+
+          if [ "$FAILED" -eq 0 ]; then
+            STATUS=":white_check_mark: Android Smoke Testing | ${PASSED} passed - ${FAILED} failed"
+          else
+            STATUS=":x: Android Smoke Testing | ${PASSED} passed - ${FAILED} failed"
+          fi
+
+          curl -s -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"text\": \"New release published by github-actions[bot]\n\n> Release - ${STATUS}\n> :round_pushpin: Report: ${REPORT_URL}\n> :white_check_mark: Passed: ${PASSED}\n> :x: Failed: ${FAILED}\n> :date: Date: ${DATE}\"}"
