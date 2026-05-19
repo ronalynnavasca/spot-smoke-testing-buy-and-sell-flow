@@ -232,9 +232,11 @@ public class androidSpotBuyAndSellFlow {
         options.setCapability("appium:noReset", true);
         driver = new AndroidDriver(new URL("http://127.0.0.1:4723"), options);
 
-        // Kill the app before starting the test
-        driver.terminateApp("com.defi.st.wallet");
-        driver.activateApp("com.defi.st.wallet");
+        // Kill and relaunch the app only at the start (first test)
+        if (currentTestName.equals("testVerifyAppLaunch")) {
+            driver.terminateApp("com.defi.st.wallet");
+            driver.activateApp("com.defi.st.wallet");
+        }
         wait = new WebDriverWait(driver, Duration.ofSeconds(15));
     }
 
@@ -535,8 +537,10 @@ public class androidSpotBuyAndSellFlow {
                 Reporter.setCurrentTestResult(result);
                 takeScreenshot("FAILED_" + result.getMethod().getMethodName(), "FAILED");
             }
-            // Kill the app after the test
-            driver.terminateApp("com.defi.st.wallet");
+            // Kill the app only after the last test (sell)
+            if (result.getMethod().getMethodName().equals("testSellOrder")) {
+                driver.terminateApp("com.defi.st.wallet");
+            }
             driver.quit();
         }
     }
