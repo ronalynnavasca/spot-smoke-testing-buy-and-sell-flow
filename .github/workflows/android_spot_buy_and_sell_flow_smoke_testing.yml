@@ -103,11 +103,6 @@ jobs:
 
           TIMESTAMP=$(date '+%Y-%m-%d_%H%M%S')
 
-          # Copy report and screenshots to temp
-          mkdir -p /tmp/report-deploy
-          cp "$REPORT_FILE" /tmp/report-deploy/index.html
-          cp -r target/surefire-reports/screenshots /tmp/report-deploy/screenshots 2>/dev/null || true
-
           # Configure git
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -120,14 +115,14 @@ jobs:
             git rm -rf . 2>/dev/null || true
           fi
 
-          # Create timestamped report directory
+          # Create timestamped report (HTML only, no screenshots)
           mkdir -p "reports/$TIMESTAMP"
-          cp -r /tmp/report-deploy/* "reports/$TIMESTAMP/"
+          cp "$REPORT_FILE" "reports/$TIMESTAMP/index.html"
 
           # Update latest
           rm -rf reports/latest
           mkdir -p reports/latest
-          cp -r /tmp/report-deploy/* reports/latest/
+          cp "$REPORT_FILE" reports/latest/index.html
 
           # Root index redirects to latest
           echo '<meta http-equiv="refresh" content="0;url=reports/latest/index.html">' > index.html

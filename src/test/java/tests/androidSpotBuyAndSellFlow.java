@@ -186,25 +186,12 @@ public class androidSpotBuyAndSellFlow {
                 if (status.equals("PASSED")) testPassed++;
                 else testHasFailure = true;
 
-                // Save PASSED screenshots as separate files, embed FAILED as base64
-                String imgHtml;
-                if (status.equals("PASSED")) {
-                    String imgFileName = "screenshots/" + testName + "_" + stepNum + "_" + stepName + ".png";
-                    File imgFile = new File("target/surefire-reports/" + imgFileName);
-                    imgFile.getParentFile().mkdirs();
-                    byte[] imgBytes = Base64.getDecoder().decode(base64);
-                    Files.write(imgFile.toPath(), imgBytes);
-                    imgHtml = "<img class='screenshot-thumb' src='" + imgFileName + "'/>";
-                } else {
-                    imgHtml = "<img class='screenshot-thumb' src='data:image/png;base64," + base64 + "'/>";
-                }
-
                 String pillClass = status.equals("PASSED") ? "pill-passed" : "pill-failed";
                 testRows.append("<tr>");
                 testRows.append("<td class='num'>").append(stepNum).append("</td>");
                 testRows.append("<td>").append(stepName).append("</td>");
                 testRows.append("<td style='font-size:12px;color:#4a5568;'>").append(stepDetails != null ? stepDetails : "").append("</td>");
-                testRows.append("<td>").append(imgHtml).append("</td>");
+                testRows.append("<td><img class='screenshot-thumb' src='data:image/png;base64,").append(base64).append("'/></td>");
                 testRows.append("<td><span class='status-pill ").append(pillClass).append("'>").append(status).append("</span></td>");
                 testRows.append("</tr>");
             }
