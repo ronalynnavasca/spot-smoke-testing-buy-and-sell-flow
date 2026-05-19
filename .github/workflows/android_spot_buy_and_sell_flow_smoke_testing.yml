@@ -112,6 +112,7 @@ jobs:
         run: |
           mkdir -p pages-output
           cp target/surefire-reports/custom-report.html pages-output/index.html 2>/dev/null || true
+          cp -r target/surefire-reports/screenshots pages-output/screenshots 2>/dev/null || true
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
