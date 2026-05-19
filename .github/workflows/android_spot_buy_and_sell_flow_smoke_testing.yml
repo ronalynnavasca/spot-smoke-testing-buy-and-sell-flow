@@ -130,8 +130,8 @@ jobs:
           PASSED=0
           FAILED=0
           if [ -f target/surefire-reports/checkpoint-results.txt ]; then
-            PASSED=$(grep -c "|PASSED" target/surefire-reports/checkpoint-results.txt || echo "0")
-            FAILED=$(grep -c "|FAILED" target/surefire-reports/checkpoint-results.txt || echo "0")
+            PASSED=$(grep -c "|PASSED" target/surefire-reports/checkpoint-results.txt || true)
+            FAILED=$(grep -c "|FAILED" target/surefire-reports/checkpoint-results.txt || true)
           elif [ -f target/surefire-reports/TEST-tests.androidSpotBuyAndSellFlow.xml ]; then
             TOTAL=$(grep -o 'tests="[0-9]*"' target/surefire-reports/TEST-tests.androidSpotBuyAndSellFlow.xml | head -1 | grep -o '[0-9]*')
             FAILURES=$(grep -o 'failures="[0-9]*"' target/surefire-reports/TEST-tests.androidSpotBuyAndSellFlow.xml | head -1 | grep -o '[0-9]*')
