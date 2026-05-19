@@ -54,7 +54,7 @@ jobs:
                 fi
               done < target/surefire-reports/checkpoint-results.txt
             else
-              # Fallback to XML-only approach
+              # Fallback to XML-only approach - only show actual test methods
               echo "| Test Method | Status | Duration |" >> $GITHUB_STEP_SUMMARY
               echo "|-------------|--------|----------|" >> $GITHUB_STEP_SUMMARY
               awk '
@@ -66,6 +66,8 @@ jobs:
                   if (match($0, /time="[^"]*"/)) {
                     ttime = substr($0, RSTART+6, RLENGTH-7)
                   }
+                  # Skip non-test methods
+                  if (name == "setUp" || name == "tearDown" || name == "generateCustomReport") next
                   failed = 0
                   if ($0 ~ /\/>/) {
                     failed = 0
@@ -76,9 +78,9 @@ jobs:
                     }
                   }
                   if (failed) {
-                    printf "| tests.androidSpotBuyAndSellFlow>>%s | ❌ Failed | %ss |\n", name, ttime
+                    printf "| %s | ❌ Failed | %ss |\n", name, ttime
                   } else {
-                    printf "| tests.androidSpotBuyAndSellFlow>>%s | ✅ Passed | %ss |\n", name, ttime
+                    printf "| %s | ✅ Passed | %ss |\n", name, ttime
                   }
                 }
               ' target/surefire-reports/TEST-tests.androidSpotBuyAndSellFlow.xml >> $GITHUB_STEP_SUMMARY
