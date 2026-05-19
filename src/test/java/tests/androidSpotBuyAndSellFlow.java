@@ -265,10 +265,10 @@ public class androidSpotBuyAndSellFlow {
             loginWithGoogle.get(0).click();
 
             // Tap on account that contains @cronoslabs.org
-            driver.findElement(AppiumBy.xpath("//*[contains(@content-desc, '@cronoslabs.org')]")).click();
+            wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.xpath("//*[contains(@content-desc, '@cronoslabs.org')]"))).click();
 
             // Tap Continue
-            driver.findElement(AppiumBy.xpath("//android.widget.Button[@text=\"Continue\"]")).click();
+            wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.xpath("//android.widget.Button[@text=\"Continue\"]"))).click();
             Thread.sleep(5000);
         } else {
             // Enter passcode only if passcode screen is visible
@@ -294,8 +294,8 @@ public class androidSpotBuyAndSellFlow {
         List<WebElement> loginWithGoogle = driver.findElements(AppiumBy.accessibilityId("Login with Google"));
         if (!loginWithGoogle.isEmpty()) {
             loginWithGoogle.get(0).click();
-            driver.findElement(AppiumBy.xpath("//*[contains(@content-desc, '@cronoslabs.org')]")).click();
-            driver.findElement(AppiumBy.xpath("//android.widget.Button[@text=\"Continue\"]")).click();
+            wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.xpath("//*[contains(@content-desc, '@cronoslabs.org')]"))).click();
+            wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.xpath("//android.widget.Button[@text=\"Continue\"]"))).click();
             Thread.sleep(5000);
         } else {
             List<WebElement> passcodeDigits = driver.findElements(AppiumBy.xpath("//android.widget.TextView[@text='2']"));
@@ -356,6 +356,7 @@ public class androidSpotBuyAndSellFlow {
 
         // Tap confirm
         wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.accessibilityId("Confirm order"))).click();
+        long buyConfirmTime = System.currentTimeMillis();
         Thread.sleep(5000);
 
         // Minimize the app (press Home)
@@ -375,8 +376,10 @@ public class androidSpotBuyAndSellFlow {
             }
             return true;
         });
-        takeScreenshotWithDetails("buy_order_notification_received", "Notification 'Order successful' received after buy order");
-        System.out.println("PASSED: Notification 'Order successful' received.");
+        long buyNotifTime = System.currentTimeMillis();
+        double buyElapsedSec = (buyNotifTime - buyConfirmTime) / 1000.0;
+        takeScreenshotWithDetails("buy_order_notification_received", "Notification 'Order successful' received<br><b style='color:red;'>Time: " + String.format("%.1f", buyElapsedSec) + "s (confirm → notification)</b>");
+        System.out.println("PASSED: Notification 'Order successful' received in " + buyElapsedSec + "s.");
 
         // Get notification body text and extract BTC amount
         String notifBody = driver.findElement(AppiumBy.xpath("//android.widget.TextView[contains(@text, 'order for')]")).getText();
@@ -432,8 +435,8 @@ public class androidSpotBuyAndSellFlow {
         List<WebElement> loginWithGoogle = driver.findElements(AppiumBy.accessibilityId("Login with Google"));
         if (!loginWithGoogle.isEmpty()) {
             loginWithGoogle.get(0).click();
-            driver.findElement(AppiumBy.xpath("//*[contains(@content-desc, '@cronoslabs.org')]")).click();
-            driver.findElement(AppiumBy.xpath("//android.widget.Button[@text=\"Continue\"]")).click();
+            wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.xpath("//*[contains(@content-desc, '@cronoslabs.org')]"))).click();
+            wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.xpath("//android.widget.Button[@text=\"Continue\"]"))).click();
             Thread.sleep(5000);
         } else {
             // Enter passcode only if passcode screen is visible
@@ -469,6 +472,7 @@ public class androidSpotBuyAndSellFlow {
 
         // Tap Confirm order
         wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.xpath("//android.widget.Button[@content-desc=\"Confirm order\"]"))).click();
+        long sellConfirmTime = System.currentTimeMillis();
 
         // Wait for confirmation overlay to be dismissed
         wait.until(ExpectedConditions.invisibilityOfElementLocated(AppiumBy.xpath("//androidx.compose.ui.viewinterop.ViewFactoryHolder/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.view.ViewGroup[2]/android.view.ViewGroup[2]")));
@@ -490,8 +494,10 @@ public class androidSpotBuyAndSellFlow {
             }
             return true;
         });
-        takeScreenshotWithDetails("sell_notification_received", "Notification 'Order successful' received after sell order");
-        System.out.println("PASSED: Notification 'Order successful' received.");
+        long sellNotifTime = System.currentTimeMillis();
+        double sellElapsedSec = (sellNotifTime - sellConfirmTime) / 1000.0;
+        takeScreenshotWithDetails("sell_notification_received", "Notification 'Order successful' received<br><b style='color:red;'>Time: " + String.format("%.1f", sellElapsedSec) + "s (confirm → notification)</b>");
+        System.out.println("PASSED: Notification 'Order successful' received in " + sellElapsedSec + "s.");
 
         // Get notification body text and verify pay amount
         String notifBody = driver.findElement(AppiumBy.xpath("//android.widget.TextView[contains(@text, 'order for')]")).getText();
