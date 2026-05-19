@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -93,25 +93,6 @@ jobs:
           echo "---" >> $GITHUB_STEP_SUMMARY
           echo "📎 **Full report with screenshots:** [View Report](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/)" >> $GITHUB_STEP_SUMMARY
 
-      - name: Ensure gtar is available for Pages artifact
-        if: always()
-        run: |
-          if ! command -v gtar &> /dev/null; then
-            if command -v brew &> /dev/null; then
-              brew install gnu-tar
-            fi
-            # Fallback: symlink tar as gtar if gnu-tar not available
-            if ! command -v gtar &> /dev/null; then
-              sudo ln -sf $(which tar) /usr/local/bin/gtar
-            fi
-          fi
-
-      - name: Prepare report for Pages
-        if: always()
-        run: |
-          mkdir -p pages-output
-          cp target/surefire-reports/custom-report.html pages-output/index.html 2>/dev/null || true
-
       - name: Upload test report artifact
         uses: actions/upload-artifact@v4
         if: always()
@@ -121,20 +102,77 @@ jobs:
             target/surefire-reports/custom-report.html
             target/screenshots/
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v4
+      - name: Deploy report to GitHub Pages
         if: always()
-        with:
-          path: pages-output
+        run: |
+          REPORT_FILE="target/surefire-reports/custom-report.html"
+          if [ ! -f "$REPORT_FILE" ]; then
+            echo "No report to deploy"
+            exit 0
+          fi
 
-  deploy-report:
-    needs: android-spot-smoke-testing-buy-and-sell-flow
-    runs-on: ubuntu-latest
-    if: always()
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          TIMESTAMP=$(date '+%Y-%m-%d_%H-%M-%S')
+          REPORT_NAME="report_${TIMESTAMP}.html"
+
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Fetch gh-pages branch or create it
+          git fetch origin gh-pages:gh-pages 2>/dev/null || git checkout --orphan gh-pages
+
+          # Switch to gh-pages
+          git checkout gh-pages
+
+          # Create reports directory
+          mkdir -p reports
+
+          # Copy new report
+          cp "$REPORT_FILE" "reports/$REPORT_NAME"
+
+          # Also keep as latest
+          cp "$REPORT_FILE" "reports/latest.html"
+
+          # Generate index.html with links to all reports (newest first)
+          cat > index.html << 'INDEXEOF'
+          <!DOCTYPE html>
+          <html><head><meta charset="utf-8">
+          <title>Test Reports - Android Spot Buy and Sell Flow</title>
+          <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f0f2f5; }
+          .header { background: linear-gradient(135deg, #1a1a2e, #16213e); color: white; padding: 30px; border-radius: 10px; margin-bottom: 25px; }
+          .header h1 { margin: 0; font-size: 24px; }
+          .header p { margin: 10px 0 0; opacity: 0.7; }
+          .report-list { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+          .report-item { padding: 15px 20px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+          .report-item:hover { background: #f7fafc; }
+          .report-item a { color: #2b6cb0; text-decoration: none; font-weight: 500; }
+          .report-item a:hover { text-decoration: underline; }
+          .latest-badge { background: #c6f6d5; color: #22543d; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+          </style></head><body>
+          <div class="header">
+          <h1>Test Execution Reports</h1>
+          <p>Android Smoke Testing: Spot Buy and Sell Flow</p>
+          </div>
+          <div class="report-list">
+          INDEXEOF
+
+          # Add latest report link
+          echo "<div class='report-item'><a href='reports/latest.html'>📋 Latest Report</a><span class='latest-badge'>LATEST</span></div>" >> index.html
+
+          # List all reports newest first
+          for f in $(ls -r reports/report_*.html 2>/dev/null); do
+            fname=$(basename "$f")
+            # Extract date from filename
+            display_date=$(echo "$fname" | sed 's/report_//;s/.html//;s/_/ /;s/-/:/3;s/-/:/3')
+            echo "<div class='report-item'><a href='reports/$fname'>$display_date</a></div>" >> index.html
+          done
+
+          cat >> index.html << 'INDEXEOF'
+          </div></body></html>
+          INDEXEOF
+
+          # Commit and push
+          git add index.html reports/
+          git commit -m "Add report $TIMESTAMP" || true
+          git push origin gh-pages
