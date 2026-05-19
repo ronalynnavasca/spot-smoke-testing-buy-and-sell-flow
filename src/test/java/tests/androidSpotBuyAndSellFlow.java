@@ -526,7 +526,10 @@ public class androidSpotBuyAndSellFlow {
          // Dismiss the success screen by pressing back
         driver.pressKey(new io.appium.java_client.android.nativekey.KeyEvent(
                 io.appium.java_client.android.nativekey.AndroidKey.BACK));
-        Thread.sleep(2000);
+        Thread.sleep(20000);
+
+        // Terminate the app - end of testing
+        driver.terminateApp("com.defi.st.wallet");
 
     }
 
@@ -536,10 +539,6 @@ public class androidSpotBuyAndSellFlow {
             if (result.getStatus() == ITestResult.FAILURE) {
                 Reporter.setCurrentTestResult(result);
                 takeScreenshot("FAILED_" + result.getMethod().getMethodName(), "FAILED");
-            }
-            // Kill the app only after the last test (sell)
-            if (result.getMethod().getMethodName().equals("testSellOrder")) {
-                driver.terminateApp("com.defi.st.wallet");
             }
             driver.quit();
         }
