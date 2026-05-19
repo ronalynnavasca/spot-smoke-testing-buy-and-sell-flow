@@ -1,0 +1,155 @@
+name: "iOS Smoke Testing: Spot Buy and Sell Flow"
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  ios-spot-smoke-testing-buy-and-sell-flow:
+    runs-on: self-hosted
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      NODE_TLS_REJECT_UNAUTHORIZED: '0'
+      DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Start Appium server
+        run: |
+          appium &
+          sleep 3
+
+      - name: Run tests
+        run: mvn test -Dtest=tests.iosSpotBuyAndSellFlow || true
+
+      - name: Generate Job Summary
+        if: always()
+        run: |
+          echo "## 📋 Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f target/surefire-reports/TEST-tests.iosSpotBuyAndSellFlow.xml ]; then
+            echo "### 📝 Test Details" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            if [ -f target/surefire-reports/checkpoint-results.txt ]; then
+              echo "| Test Method | Assertion | Status |" >> $GITHUB_STEP_SUMMARY
+              echo "|-------------|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+              while IFS='|' read -r test_name step_name status; do
+                if [ "$status" = "PASSED" ]; then
+                  echo "| $test_name | $step_name | ✅ |" >> $GITHUB_STEP_SUMMARY
+                else
+                  echo "| $test_name | $step_name | ❌ |" >> $GITHUB_STEP_SUMMARY
+                fi
+              done < target/surefire-reports/checkpoint-results.txt
+            else
+              echo "| Test Method | Status | Duration |" >> $GITHUB_STEP_SUMMARY
+              echo "|-------------|--------|----------|" >> $GITHUB_STEP_SUMMARY
+              awk '
+                /<testcase / {
+                  name = ""; ttime = ""
+                  if (match($0, /name="[^"]*"/)) {
+                    name = substr($0, RSTART+6, RLENGTH-7)
+                  }
+                  if (match($0, /time="[^"]*"/)) {
+                    ttime = substr($0, RSTART+6, RLENGTH-7)
+                  }
+                  if (name == "setUp" || name == "tearDown" || name == "generateCustomReport") next
+                  failed = 0
+                  if ($0 ~ /\/>/) {
+                    failed = 0
+                  } else {
+                    while ((getline line) > 0) {
+                      if (line ~ /<failure/) { failed = 1 }
+                      if (line ~ /<\/testcase>/) { break }
+                    }
+                  }
+                  if (failed) {
+                    printf "| %s | ❌ Failed | %ss |\n", name, ttime
+                  } else {
+                    printf "| %s | ✅ Passed | %ss |\n", name, ttime
+                  }
+                }
+              ' target/surefire-reports/TEST-tests.iosSpotBuyAndSellFlow.xml >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "⚠️ No test results found." >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "📎 **Full report with screenshots:** [View Report](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/)" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload test report artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ios-test-report-${{ github.run_number }}
+          path: |
+            target/surefire-reports/custom-report.html
+            target/screenshots/
+
+      - name: Ensure gtar is available
+        if: always()
+        run: |
+          if ! command -v gtar &> /dev/null; then
+            if command -v brew &> /dev/null; then
+              brew install gnu-tar 2>/dev/null || true
+            fi
+            if ! command -v gtar &> /dev/null; then
+              sudo ln -sf $(which tar) /usr/local/bin/gtar
+            fi
+          fi
+
+      - name: Prepare Pages
+        if: always()
+        run: |
+          mkdir -p pages-output
+          cp target/surefire-reports/custom-report.html pages-output/index.html 2>/dev/null || true
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        if: always()
+        with:
+          path: pages-output
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        if: always()
+        uses: actions/deploy-pages@v4
+
+      - name: Notify Slack
+        if: always()
+        run: |
+          PASSED=0
+          FAILED=0
+          if [ -f target/surefire-reports/checkpoint-results.txt ]; then
+            PASSED=$(grep -c "|PASSED" target/surefire-reports/checkpoint-results.txt || true)
+            FAILED=$(grep -c "|FAILED" target/surefire-reports/checkpoint-results.txt || true)
+          elif [ -f target/surefire-reports/TEST-tests.iosSpotBuyAndSellFlow.xml ]; then
+            TOTAL=$(grep -o 'tests="[0-9]*"' target/surefire-reports/TEST-tests.iosSpotBuyAndSellFlow.xml | head -1 | grep -o '[0-9]*')
+            FAILURES=$(grep -o 'failures="[0-9]*"' target/surefire-reports/TEST-tests.iosSpotBuyAndSellFlow.xml | head -1 | grep -o '[0-9]*')
+            ERRORS=$(grep -o 'errors="[0-9]*"' target/surefire-reports/TEST-tests.iosSpotBuyAndSellFlow.xml | head -1 | grep -o '[0-9]*')
+            FAILED=$((FAILURES + ERRORS))
+            PASSED=$((TOTAL - FAILED))
+          fi
+
+          DATE=$(date '+%Y-%m-%d %H:%M:%S')
+          REPORT_URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+
+          if [ "$FAILED" -eq 0 ]; then
+            STATUS=":white_check_mark: iOS Smoke Testing | ${PASSED} passed - ${FAILED} failed"
+          else
+            STATUS=":x: iOS Smoke Testing | ${PASSED} passed - ${FAILED} failed"
+          fi
+
+          curl -s -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"text\": \"New release published by github-actions[bot]\n\n> Release - ${STATUS}\n> :round_pushpin: Report: ${REPORT_URL}\n> :white_check_mark: Passed: ${PASSED}\n> :x: Failed: ${FAILED}\n> :date: Date: ${DATE}\"}"
