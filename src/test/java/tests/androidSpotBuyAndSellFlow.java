@@ -231,6 +231,10 @@ public class androidSpotBuyAndSellFlow {
         options.setNewCommandTimeout(Duration.ofSeconds(60));
         options.setCapability("appium:noReset", true);
         driver = new AndroidDriver(new URL("http://127.0.0.1:4723"), options);
+
+        // Kill the app before starting the test
+        driver.terminateApp("com.defi.st.wallet");
+        driver.activateApp("com.defi.st.wallet");
         wait = new WebDriverWait(driver, Duration.ofSeconds(15));
     }
 
@@ -531,6 +535,8 @@ public class androidSpotBuyAndSellFlow {
                 Reporter.setCurrentTestResult(result);
                 takeScreenshot("FAILED_" + result.getMethod().getMethodName(), "FAILED");
             }
+            // Kill the app after the test
+            driver.terminateApp("com.defi.st.wallet");
             driver.quit();
         }
     }
