@@ -61,17 +61,20 @@ jobs:
                     ttime = substr($0, RSTART+6, RLENGTH-7)
                   }
                   if (name == "setUp" || name == "tearDown" || name == "generateCustomReport") next
-                  failed = 0
+                  failed = 0; skipped = 0
                   if ($0 ~ /\/>/) {
                     failed = 0
                   } else {
                     while ((getline line) > 0) {
                       if (line ~ /<failure/) { failed = 1 }
+                      if (line ~ /<skipped/) { skipped = 1 }
                       if (line ~ /<\/testcase>/) { break }
                     }
                   }
                   if (failed) {
                     printf "| %s | ❌ Failed | %ss |\n", name, ttime
+                  } else if (skipped) {
+                    printf "| %s | ⏭️ Skipped | %ss |\n", name, ttime
                   } else {
                     printf "| %s | ✅ Passed | %ss |\n", name, ttime
                   }
@@ -149,8 +152,10 @@ jobs:
             TOTAL=$(grep -o 'tests="[0-9]*"' target/surefire-reports/TEST-tests.androidSpotBuyAndSellFlow.xml | head -1 | grep -o '[0-9]*')
             FAILURES=$(grep -o 'failures="[0-9]*"' target/surefire-reports/TEST-tests.androidSpotBuyAndSellFlow.xml | head -1 | grep -o '[0-9]*')
             ERRORS=$(grep -o 'errors="[0-9]*"' target/surefire-reports/TEST-tests.androidSpotBuyAndSellFlow.xml | head -1 | grep -o '[0-9]*')
+            SKIPPED=$(grep -o 'skipped="[0-9]*"' target/surefire-reports/TEST-tests.androidSpotBuyAndSellFlow.xml | head -1 | grep -o '[0-9]*')
+            SKIPPED=${SKIPPED:-0}
             FAILED=$((FAILURES + ERRORS))
-            PASSED=$((TOTAL - FAILED))
+            PASSED=$((TOTAL - FAILED - SKIPPED))
           fi
 
           DATE=$(date '+%Y-%m-%d %H:%M:%S')
