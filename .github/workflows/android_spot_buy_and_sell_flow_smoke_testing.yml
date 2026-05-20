@@ -60,10 +60,12 @@ jobs:
                   if (match($0, /time="[^"]*"/)) {
                     ttime = substr($0, RSTART+6, RLENGTH-7)
                   }
-                  if (name == "setUp" || name == "tearDown" || name == "generateCustomReport") next
+                  if (name ~ /^setUp/ || name ~ /^tearDown/ || name ~ /^generateCustomReport/) next
                   failed = 0; skipped = 0
                   if ($0 ~ /\/>/) {
-                    failed = 0
+                    if (ttime == "0" || ttime == "0.0" || ttime == "0.000") {
+                      skipped = 1
+                    }
                   } else {
                     while ((getline line) > 0) {
                       if (line ~ /<failure/) { failed = 1 }
