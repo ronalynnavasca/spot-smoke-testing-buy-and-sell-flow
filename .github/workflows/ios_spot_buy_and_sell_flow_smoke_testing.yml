@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   ios-spot-smoke-testing-buy-and-sell-flow:
-    runs-on: [self-hosted, ios]
+    runs-on: [self-hosted, macOS]
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
