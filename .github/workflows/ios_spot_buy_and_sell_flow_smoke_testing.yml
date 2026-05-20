@@ -23,6 +23,8 @@ jobs:
 
       - name: Start Appium server
         run: |
+          pkill -f appium || true
+          sleep 2
           appium --log-level debug > appium.log 2>&1 &
           sleep 15
 
