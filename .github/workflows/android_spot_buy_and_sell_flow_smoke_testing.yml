@@ -84,7 +84,7 @@ jobs:
 
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
-          echo "📎 **Full report with screenshots:** [View Report](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/)" >> $GITHUB_STEP_SUMMARY
+          echo "📎 **Full report with screenshots:** [View Report](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/android/)" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload test report artifact
         uses: actions/upload-artifact@v4
@@ -110,8 +110,21 @@ jobs:
       - name: Prepare Pages
         if: always()
         run: |
-          mkdir -p pages-output
-          cp target/surefire-reports/custom-report.html pages-output/index.html 2>/dev/null || true
+          mkdir -p pages-output/android
+          cp target/surefire-reports/custom-report.html pages-output/android/index.html 2>/dev/null || true
+          cat > pages-output/index.html << 'INDEXEOF'
+          <!DOCTYPE html>
+          <html>
+          <head><title>Smoke Test Reports</title></head>
+          <body style="font-family:sans-serif;padding:40px;">
+          <h1>Smoke Test Reports</h1>
+          <ul>
+          <li><a href="android/">Android Spot Buy and Sell Flow</a></li>
+          <li><a href="ios/">iOS Spot Buy and Sell Flow</a></li>
+          </ul>
+          </body>
+          </html>
+          INDEXEOF
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
@@ -141,7 +154,7 @@ jobs:
           fi
 
           DATE=$(date '+%Y-%m-%d %H:%M:%S')
-          REPORT_URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+          REPORT_URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/android/"
 
           if [ "$FAILED" -eq 0 ]; then
             STATUS=":white_check_mark: Android Smoke Testing | ${PASSED} passed - ${FAILED} failed"
