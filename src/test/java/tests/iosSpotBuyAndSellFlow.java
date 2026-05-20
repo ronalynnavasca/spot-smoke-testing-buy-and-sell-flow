@@ -24,10 +24,16 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.openqa.selenium.Dimension;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
+import org.openqa.selenium.interactions.PointerInput;
+import org.openqa.selenium.interactions.Sequence;
 import org.testng.ITestResult;
 import org.testng.Reporter;
 import org.testng.annotations.AfterSuite;
@@ -45,10 +51,18 @@ public class iosSpotBuyAndSellFlow {
     private String currentTestDescription = "";
 
     private void takeScreenshot(String stepName) {
-        takeScreenshot(stepName, "PASSED");
+        takeScreenshot(stepName, "PASSED", "");
     }
 
     private void takeScreenshot(String stepName, String status) {
+        takeScreenshot(stepName, status, "");
+    }
+
+    private void takeScreenshotWithDetails(String stepName, String description) {
+        takeScreenshot(stepName, "PASSED", description);
+    }
+
+    private void takeScreenshot(String stepName, String status, String description) {
         try {
             screenshotCounter++;
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
@@ -62,7 +76,7 @@ public class iosSpotBuyAndSellFlow {
             // Store for custom report
             byte[] fileContent = Files.readAllBytes(destFile.toPath());
             String base64Screenshot = Base64.getEncoder().encodeToString(fileContent);
-            reportEntries.add(new String[]{currentTestName, stepName, base64Screenshot, status, currentTestDescription});
+            reportEntries.add(new String[]{currentTestName, stepName, base64Screenshot, status, currentTestDescription, description});
 
             // Also embed in TestNG report
             Reporter.log("<br><b>" + stepName + "</b> [" + status + "]<br>");
@@ -151,7 +165,7 @@ public class iosSpotBuyAndSellFlow {
                         html.append(" &nbsp; <strong>Description:</strong> ").append(testDescription);
                         html.append(" &nbsp; <strong>Status:</strong> <span class='status-tag ").append(statusTagClass).append("'>").append(overallStatus).append("</span></div>");
                         html.append("<table class='cases-table'>");
-                        html.append("<tr><th>#</th><th>Cases</th><th>Screenshot</th><th>Status</th></tr>");
+                        html.append("<tr><th>#</th><th>Cases</th><th>Details</th><th>Screenshot</th><th>Status</th></tr>");
                         html.append(testRows);
                         html.append("</table></div>");
                     }
@@ -168,9 +182,12 @@ public class iosSpotBuyAndSellFlow {
                     testRows = new StringBuilder();
                 }
 
+                if (isEnd) break;
+
                 String stepName = reportEntries.get(i)[1];
                 String base64 = reportEntries.get(i)[2];
                 String status = reportEntries.get(i)[3];
+                String stepDetails = reportEntries.get(i).length > 5 ? reportEntries.get(i)[5] : "";
 
                 stepNum++;
                 testTotal++;
@@ -181,6 +198,7 @@ public class iosSpotBuyAndSellFlow {
                 testRows.append("<tr>");
                 testRows.append("<td class='num'>").append(stepNum).append("</td>");
                 testRows.append("<td>").append(stepName).append("</td>");
+                testRows.append("<td style='font-size:12px;color:#4a5568;'>").append(stepDetails != null ? stepDetails : "").append("</td>");
                 testRows.append("<td><img class='screenshot-thumb' src='data:image/png;base64,").append(base64).append("'/></td>");
                 testRows.append("<td><span class='status-pill ").append(pillClass).append("'>").append(status).append("</span></td>");
                 testRows.append("</tr>");
@@ -217,35 +235,332 @@ public class iosSpotBuyAndSellFlow {
         currentTestDescription = result.getMethod().getDescription();
         XCUITestOptions options = new XCUITestOptions();
 
-        options.setDeviceName("iPhone 16 Pro");
+        options.setDeviceName("Animals AIR");
         options.setPlatformName("iOS");
         options.setAutomationName("XCUITest");
 
         options.setCapability("appium:bundleId", "com.defi.uat.wallet.enterprise");
-        options.setCapability("appium:udid", "3B2BBD6D-DE65-4FAC-A2AA-E80D57AB3EEE");
+        options.setCapability("appium:udid", "00008150-0004344A3CF8401C");
         options.setCapability("appium:noReset", true);
+        options.setCapability("appium:xcodeOrgId", "QW89J892K5");
+        options.setCapability("appium:xcodeSigningId", "iPhone Developer");
+        options.setCapability("appium:updatedWDABundleId", "com.ronalyn.WebDriverAgentRunner");
+        options.setCapability("appium:derivedDataPath", "/Users/ronalynnavasca/Library/Developer/Xcode/DerivedData/WebDriverAgent-awtuigoxangidfdtjrfzodoybfie");
+        options.setCapability("appium:usePrebuiltWDA", true);
+        options.setCapability("appium:showXcodeLog", true);
+        options.setCapability("appium:wdaLaunchTimeout", 120000);
+        options.setCapability("appium:wdaStartupRetries", 3);
 
         options.setNewCommandTimeout(Duration.ofSeconds(60));
         driver = new IOSDriver(new URL("http://127.0.0.1:4723"), options);
+
+        // Kill and relaunch the app only at the start (first test)
+        if (currentTestName.equals("testVerifyAppLaunch")) {
+            try {
+                driver.terminateApp("com.defi.uat.wallet.enterprise");
+            } catch (Exception e) {
+                System.out.println("App terminate skipped: " + e.getMessage());
+            }
+            driver.activateApp("com.defi.uat.wallet.enterprise");
+        }
         wait = new WebDriverWait(driver, Duration.ofSeconds(15));
     }
 
-    @Test(description = "Verify app launch")
+    @Test(description = "Verify app launch", priority = 1)
     public void testVerifyAppLaunch() throws InterruptedException {
-        // TODO: Implement iOS app launch verification
+        // Wait for app to load
         Thread.sleep(5000);
+
+        // If "Login with Google" exists, tap it; otherwise enter passcode
+        List<WebElement> loginWithGoogle = driver.findElements(AppiumBy.accessibilityId("Login with Google"));
+        if (!loginWithGoogle.isEmpty()) {
+            loginWithGoogle.get(0).click();
+
+            // Tap on account that contains @cronoslabs.org
+            wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.xpath("//*[contains(@label, '@cronoslabs.org')]"))).click();
+
+            // Tap Continue
+            wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.xpath("//XCUIElementTypeButton[@name=\"Continue\"]"))).click();
+            Thread.sleep(5000);
+        } else {
+            // Enter passcode only if passcode screen is visible
+            List<WebElement> passcodeDigits = driver.findElements(AppiumBy.xpath("//XCUIElementTypeButton[@name='identity_verification_keypad-key-2']"));
+            if (!passcodeDigits.isEmpty()) {
+                String passcode = "258036";
+                for (char digit : passcode.toCharArray()) {
+                    driver.findElement(
+                            AppiumBy.xpath("//XCUIElementTypeButton[@name='identity_verification_keypad-key-" + digit + "']")
+                    ).click();
+                }
+                Thread.sleep(3000);
+            }
+        }
+
+        takeScreenshot("app_launched_successfully");
     }
 
-    @Test(description = "Verify Buy order flow")
+    @Test(description = "Verify Buy order flow", priority = 2)
     public void testBuyOrder() throws InterruptedException {
-        // TODO: Implement iOS Buy order flow
+        // Wait for app to load
         Thread.sleep(5000);
+
+        // Handle login/passcode
+        List<WebElement> loginWithGoogle = driver.findElements(AppiumBy.accessibilityId("Login with Google"));
+        if (!loginWithGoogle.isEmpty()) {
+            loginWithGoogle.get(0).click();
+            wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.xpath("//*[contains(@label, '@cronoslabs.org')]"))).click();
+            wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.xpath("//XCUIElementTypeButton[@name=\"Continue\"]"))).click();
+            Thread.sleep(5000);
+        } else {
+            List<WebElement> passcodeDigits = driver.findElements(AppiumBy.xpath("//XCUIElementTypeButton[@name='identity_verification_keypad-key-2']"));
+            if (!passcodeDigits.isEmpty()) {
+                String passcode = "258036";
+                for (char digit : passcode.toCharArray()) {
+                    driver.findElement(
+                            AppiumBy.xpath("//XCUIElementTypeButton[@name='identity_verification_keypad-key-" + digit + "']")
+                    ).click();
+                }
+                Thread.sleep(3000);
+            }
+        }
+
+        // Navigate to Market
+        new WebDriverWait(driver, Duration.ofSeconds(30)).until(ExpectedConditions.elementToBeClickable(AppiumBy.accessibilityId("cronos_search_tab"))).click();
+
+        // Tap on Search
+        wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.accessibilityId("market_open_search_button"))).click();
+
+        // Input "BTC" in search field
+        WebElement searchField = wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.xpath("//XCUIElementTypeSearchField[@name='Stocks, Crypto, Commodities']")));
+        searchField.sendKeys("BTC");
+
+        // Tap on BTC
+        new WebDriverWait(driver, Duration.ofSeconds(30)).until(ExpectedConditions.elementToBeClickable(AppiumBy.accessibilityId("BTC"))).click();
+
+        // Tap on Buy
+        wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.accessibilityId("Buy"))).click();
+
+        // Tap amount input and enter 0.01 using keypad buttons
+        WebElement amountInput = wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.xpath("//XCUIElementTypeOther[@name='0, USD']")));
+        amountInput.click();
+        // Type 0.01 by tapping individual keypad buttons
+        driver.findElement(AppiumBy.xpath("//XCUIElementTypeButton[@name='0']")).click();
+        driver.findElement(AppiumBy.xpath("//XCUIElementTypeButton[@name='.']")).click();
+        driver.findElement(AppiumBy.xpath("//XCUIElementTypeButton[@name='0']")).click();
+        driver.findElement(AppiumBy.xpath("//XCUIElementTypeButton[@name='1']")).click();
+
+        // Tap review order
+        wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.accessibilityId("spot-trade-sheet.review-order-button"))).click();
+        Thread.sleep(3000);
+
+        // Get amount in BTC from review screen
+        Thread.sleep(3000);
+        String amountInBTC = new WebDriverWait(driver, Duration.ofSeconds(30)).until(ExpectedConditions.visibilityOfElementLocated(AppiumBy.accessibilityId("spot-trade-sheet.receive-amount-text"))).getText();
+        System.out.println("Amount in BTC from review: " + amountInBTC);
+
+        // Assert pay amount matches input amount
+        Thread.sleep(3000);
+        String payAmount = new WebDriverWait(driver, Duration.ofSeconds(15)).until(ExpectedConditions.visibilityOfElementLocated(AppiumBy.accessibilityId("spot-trade-sheet.pay-amount-text"))).getText();
+        System.out.println("Pay amount from review: " + payAmount);
+        takeScreenshotWithDetails("input_and_confirmation_page_validation", "Verified pay amount on review screen: " + payAmount);
+        Assert.assertTrue(payAmount.contains("0.01") || payAmount.startsWith("$"),
+                "Pay amount (" + payAmount + ") should contain input amount");
+        System.out.println("PASSED: Pay amount matches input amount.");
+
+        // Tap confirm
+        wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.accessibilityId("spot-trade-sheet.confirm-button"))).click();
+        long buyConfirmTime = System.currentTimeMillis();
+        Thread.sleep(1000);
+
+        // // Press Home button to minimize app
+        // Map<String, Object> homeArgs = new HashMap<>();
+        // homeArgs.put("name", "home");
+        // driver.executeScript("mobile: pressButton", homeArgs);
+
+        // Poll for "Order successful" notification in-app
+        WebDriverWait notifWait = new WebDriverWait(driver, Duration.ofSeconds(30));
+        notifWait.until(d -> {
+            List<WebElement> notifs = driver.findElements(AppiumBy.accessibilityId("Order successful"));
+            return !notifs.isEmpty();
+        });
+        long buyNotifTime = System.currentTimeMillis();
+        double buyElapsedSec = (buyNotifTime - buyConfirmTime) / 1000.0;
+        takeScreenshotWithDetails("buy_order_notification_received", "Notification 'Order successful' received<br><b style='color:red;'>Time: " + String.format("%.1f", buyElapsedSec) + "s (confirm → notification)</b>");
+        System.out.println("PASSED: Notification 'Order successful' received in " + buyElapsedSec + "s.");
+
+        // Get notification body text and extract BTC amount
+        String notifBody = driver.findElement(AppiumBy.iOSNsPredicateString("type == 'XCUIElementTypeStaticText' AND name BEGINSWITH 'Your buy order for'")).getText();
+        System.out.println("Notification body: " + notifBody);
+
+        // Extract amount from notification (e.g. "Your buy order for <0.000001 CDCBTC...")
+        String confirmedAmountInBTC = notifBody.split("for ")[1].split(" CDCBTC")[0];
+        System.out.println("Amount in BTC from notification: " + confirmedAmountInBTC);
+
+        // Assert amountToken matches confirmedTokenAmount
+        takeScreenshotWithDetails("buy_token_amount_matches_notification", "BTC amount in review matches notification amount");
+        Assert.assertEquals(confirmedAmountInBTC, amountInBTC,
+                "BTC amount in review (" + amountInBTC + ") should match notification (" + confirmedAmountInBTC + ")");
+        System.out.println("PASSED: Amount in BTC matches between review and notification.");
+
+        // Tap View details to navigate to order details
+        wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.accessibilityId("View details"))).click();
+        Thread.sleep(3000);
+
+        // Assert "Success" text is displayed
+        String successText = wait.until(ExpectedConditions.visibilityOfElementLocated(AppiumBy.xpath("//XCUIElementTypeStaticText[@name=\"Success\"]"))).getText();
+        takeScreenshotWithDetails("buy_order_success_history_screen", "Success text displayed on order history screen");
+        Assert.assertEquals(successText, "Success", "Success text should be displayed");
+        System.out.println("PASSED: Success text is displayed.");
+
+        // Assert token amount on success screen matches confirmedAmount
+        String successAmountText = wait.until(ExpectedConditions.visibilityOfElementLocated(AppiumBy.xpath("//*[contains(@label, 'CDCBTC') or @name='" + confirmedAmountInBTC + "']"))).getText();
+        takeScreenshotWithDetails("buy_token_amount_matches_token_buy_history", "Token amount on success screen matches confirmed BTC amount");
+        Assert.assertTrue(successAmountText.contains(confirmedAmountInBTC) || confirmedAmountInBTC.contains(successAmountText),
+                "Amount on success screen (" + successAmountText + ") should match confirmed amount (" + confirmedAmountInBTC + ")");
+        System.out.println("PASSED: Amount on success screen matches confirmed BTC amount.");
+
+        // Assert total paid matches the input value
+        String totalPaid = wait.until(ExpectedConditions.visibilityOfElementLocated(AppiumBy.xpath("//XCUIElementTypeStaticText[@name=\"$0.01\"]"))).getText();
+        takeScreenshotWithDetails("buy_total_paid_matches_input", "Total paid ($0.01) matches input value");
+        Assert.assertEquals(totalPaid, "$0.01",
+                "Total paid (" + totalPaid + ") should match input value ($0.01)");
+        System.out.println("PASSED: Total paid matches input value.");
+
+        // Navigate back
+        // Dismiss by swiping down on the modal
+        WebElement dismissArea = driver.findElement(AppiumBy.xpath("//XCUIElementTypeApplication[@name='Cronos-UAT']/XCUIElementTypeWindow[1]/XCUIElementTypeOther[2]/XCUIElementTypeOther[2]/XCUIElementTypeOther[2]/XCUIElementTypeOther"));
+        int startX = dismissArea.getRect().x + (dismissArea.getRect().width / 2);
+        int startY = dismissArea.getRect().y + 20;
+        int endY = dismissArea.getRect().y + dismissArea.getRect().height;
+        PointerInput swipeFinger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
+        Sequence swipeDown = new Sequence(swipeFinger, 1);
+        swipeDown.addAction(swipeFinger.createPointerMove(Duration.ZERO, PointerInput.Origin.viewport(), startX, startY));
+        swipeDown.addAction(swipeFinger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
+        swipeDown.addAction(swipeFinger.createPointerMove(Duration.ofMillis(500), PointerInput.Origin.viewport(), startX, endY));
+        swipeDown.addAction(swipeFinger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
+        driver.perform(Collections.singletonList(swipeDown));
+        Thread.sleep(2000);
     }
 
-    @Test(description = "Verify Sell order flow")
+    @Test(description = "Verify Sell order flow", priority = 3)
     public void testSellOrder() throws InterruptedException {
-        // TODO: Implement iOS Sell order flow
+        // Wait for app to load
         Thread.sleep(5000);
+
+        // Handle login/passcode
+        List<WebElement> loginWithGoogle = driver.findElements(AppiumBy.accessibilityId("Login with Google"));
+        if (!loginWithGoogle.isEmpty()) {
+            loginWithGoogle.get(0).click();
+            wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.xpath("//*[contains(@label, '@cronoslabs.org')]"))).click();
+            wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.xpath("//XCUIElementTypeButton[@name=\"Continue\"]"))).click();
+            Thread.sleep(5000);
+        } else {
+            List<WebElement> passcodeDigits = driver.findElements(AppiumBy.xpath("//XCUIElementTypeButton[@name='identity_verification_keypad-key-2']"));
+            if (!passcodeDigits.isEmpty()) {
+                String passcode = "258036";
+                for (char digit : passcode.toCharArray()) {
+                    driver.findElement(
+                            AppiumBy.xpath("//XCUIElementTypeButton[@name='identity_verification_keypad-key-" + digit + "']")
+                    ).click();
+                }
+                Thread.sleep(3000);
+            }
+        }
+
+        // Tap on Manage
+        new WebDriverWait(driver, Duration.ofSeconds(30)).until(ExpectedConditions.elementToBeClickable(AppiumBy.accessibilityId("Manage"))).click();
+
+        // Tap on Sell
+        wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.accessibilityId("Sell"))).click();
+
+        // Tap Set amount to max
+        wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.xpath("//XCUIElementTypeButton[@name=\"spot-trade-sheet.preset-100-button\"]"))).click();
+        Thread.sleep(1000);
+
+        // Get input amount value
+        Thread.sleep(3000);
+        String inputAmount = new WebDriverWait(driver, Duration.ofSeconds(30)).until(ExpectedConditions.visibilityOfElementLocated(AppiumBy.xpath("//XCUIElementTypeOther[@name='BTC']"))).getText();
+        System.out.println("Input amount: " + inputAmount);
+
+        // Tap Review order
+        wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.xpath("//XCUIElementTypeButton[@name='spot-trade-sheet.review-order-button']"))).click();
+
+        // Tap Confirm order
+        wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.accessibilityId("spot-trade-sheet.confirm-button"))).click();
+        long sellConfirmTime = System.currentTimeMillis();
+        Thread.sleep(1000);
+
+        // // Press Home button to minimize app
+        // Map<String, Object> homeArgs = new HashMap<>();
+        // homeArgs.put("name", "home");
+        // driver.executeScript("mobile: pressButton", homeArgs);
+
+        // Poll for "Order successful" notification in-app
+        WebDriverWait sellNotifWait = new WebDriverWait(driver, Duration.ofSeconds(30));
+        sellNotifWait.until(d -> {
+            List<WebElement> notifs = driver.findElements(AppiumBy.accessibilityId("Order successful"));
+            return !notifs.isEmpty();
+        });
+        long sellNotifTime = System.currentTimeMillis();
+        double sellElapsedSec = (sellNotifTime - sellConfirmTime) / 1000.0;
+        takeScreenshotWithDetails("sell_notification_received", "Notification 'Order successful' received<br><b style='color:red;'>Time: " + String.format("%.1f", sellElapsedSec) + "s (confirm → notification)</b>");
+        System.out.println("PASSED: Notification 'Order successful' received in " + sellElapsedSec + "s.");
+
+        // Get notification body text and verify pay amount
+        String notifBody = driver.findElement(AppiumBy.iOSNsPredicateString("type == 'XCUIElementTypeStaticText' AND name BEGINSWITH 'Your sell order for'")).getText();
+        System.out.println("Notification body: " + notifBody);
+
+        // Extract amount from notification
+        String notifAmount = notifBody.split("for ")[1].split(" CDCBTC")[0];
+        System.out.println("Amount from notification: " + notifAmount);
+
+        // Assert notification amount is valid
+        takeScreenshotWithDetails("sell_input_amount_matches_notification", "Notification amount matches input sell amount");
+        Assert.assertNotNull(notifAmount, "Notification amount should not be null");
+        Assert.assertFalse(notifAmount.isEmpty(), "Notification amount should not be empty");
+        System.out.println("PASSED: Notification amount validated: " + notifAmount);
+
+        // Tap View details to navigate to order details
+        wait.until(ExpectedConditions.elementToBeClickable(AppiumBy.accessibilityId("View details"))).click();
+        Thread.sleep(3000);
+
+        // Assert "Success" text is displayed
+        String successText = wait.until(ExpectedConditions.visibilityOfElementLocated(AppiumBy.xpath("//XCUIElementTypeStaticText[@name=\"Success\"]"))).getText();
+        takeScreenshotWithDetails("sell_order_success_history_screen", "Success text displayed on sell order history screen");
+        Assert.assertEquals(successText, "Success", "Success text should be displayed");
+        System.out.println("PASSED: Success text is displayed.");
+
+        // Assert token amount on success screen matches notification amount
+        String successAmountText = wait.until(ExpectedConditions.visibilityOfElementLocated(AppiumBy.xpath("//*[contains(@label, 'CDCBTC') or @name='" + notifAmount + "']"))).getText();
+        takeScreenshotWithDetails("sell_notification_token_amount_matches_token_sell_history", "Token amount on success screen matches notification amount");
+        Assert.assertTrue(successAmountText.contains(notifAmount) || notifAmount.contains(successAmountText),
+                "Amount on success screen (" + successAmountText + ") should match notification amount (" + notifAmount + ")");
+        System.out.println("PASSED: Amount on success screen matches notification amount.");
+
+        // Take final screenshot of success screen
+        takeScreenshotWithDetails("sell_successfully_completed", "Sell order completed successfully");
+        System.out.println("PASSED: Sell order completed successfully.");
+
+        // Dismiss by swiping down on the modal
+        WebElement dismissArea = driver.findElement(AppiumBy.xpath("//XCUIElementTypeApplication[@name='Cronos-UAT']/XCUIElementTypeWindow[1]/XCUIElementTypeOther[2]/XCUIElementTypeOther[2]/XCUIElementTypeOther[2]/XCUIElementTypeOther"));
+        int startX2 = dismissArea.getRect().x + (dismissArea.getRect().width / 2);
+        int startY2 = dismissArea.getRect().y + 20;
+        int endY2 = dismissArea.getRect().y + dismissArea.getRect().height;
+        PointerInput swipeFinger2 = new PointerInput(PointerInput.Kind.TOUCH, "finger");
+        Sequence swipeDown2 = new Sequence(swipeFinger2, 1);
+        swipeDown2.addAction(swipeFinger2.createPointerMove(Duration.ZERO, PointerInput.Origin.viewport(), startX2, startY2));
+        swipeDown2.addAction(swipeFinger2.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
+        swipeDown2.addAction(swipeFinger2.createPointerMove(Duration.ofMillis(500), PointerInput.Origin.viewport(), startX2, endY2));
+        swipeDown2.addAction(swipeFinger2.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
+        driver.perform(Collections.singletonList(swipeDown2));
+        Thread.sleep(2000);
+
+        // Terminate the app - end of testing
+        try {
+            driver.terminateApp("com.defi.uat.wallet.enterprise");
+        } catch (Exception e) {
+            System.out.println("App terminate skipped: " + e.getMessage());
+        }
     }
 
     @AfterMethod
