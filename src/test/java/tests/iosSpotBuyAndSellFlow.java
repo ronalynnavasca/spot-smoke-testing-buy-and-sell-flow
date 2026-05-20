@@ -247,9 +247,12 @@ public class iosSpotBuyAndSellFlow {
         options.setCapability("appium:updatedWDABundleId", "com.ronalyn.WebDriverAgentRunner");
         options.setCapability("appium:derivedDataPath", "/Users/ronalynnavasca/Library/Developer/Xcode/DerivedData/WebDriverAgent-awtuigoxangidfdtjrfzodoybfie");
         options.setCapability("appium:usePrebuiltWDA", true);
+        options.setCapability("appium:autoAcceptAlerts", true);
         options.setCapability("appium:showXcodeLog", true);
         options.setCapability("appium:wdaLaunchTimeout", 120000);
-        options.setCapability("appium:wdaStartupRetries", 3);
+        options.setCapability("appium:wdaStartupRetries", 4);
+        options.setCapability("appium:wdaStartupRetryInterval", 20000);
+        options.setCapability("appium:waitForQuiescence", false);
 
         options.setNewCommandTimeout(Duration.ofSeconds(60));
         driver = new IOSDriver(new URL("http://127.0.0.1:4723"), options);

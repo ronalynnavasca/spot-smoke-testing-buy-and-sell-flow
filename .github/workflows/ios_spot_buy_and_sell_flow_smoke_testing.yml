@@ -23,8 +23,8 @@ jobs:
 
       - name: Start Appium server
         run: |
-          appium &
-          sleep 3
+          appium --log-level debug > appium.log 2>&1 &
+          sleep 15
 
       - name: Run tests
         run: mvn test -Dtest=tests.iosSpotBuyAndSellFlow || true
@@ -100,6 +100,13 @@ jobs:
           path: |
             target/surefire-reports/custom-report.html
             target/screenshots/
+
+      - name: Upload Appium Logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: appium-logs
+          path: appium.log
 
       - name: Ensure gtar is available
         if: always()
