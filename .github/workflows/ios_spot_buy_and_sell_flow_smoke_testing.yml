@@ -23,7 +23,8 @@ jobs:
 
       - name: Start Appium server
         run: |
-          pkill -f appium || true
+          pkill -f "node.*appium" || true
+          lsof -ti:4723 | xargs kill -9 2>/dev/null || true
           sleep 2
           appium --log-level debug > appium.log 2>&1 &
           sleep 15
